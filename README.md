@@ -1,4 +1,4 @@
-## COD3RECOMP-ENHANCED – Changelog
+## COD3RECOMP-ENHANCED
 
 FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) (0.5.424)
 
