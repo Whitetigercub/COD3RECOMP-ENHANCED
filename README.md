@@ -8,7 +8,7 @@ FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/C
 - Added mouse and keyboard button displays for UI
 - Added modern COD-style hitmarkers with sound, toggle and customizability
 - Added M1 Garand partial reload.
-- Added experimental blood with toggle (press F11 -> GAMEPLAY, CURRENTLY UNSTABLE)
+- Added experimental blood decals and blood cloud, toggleable (press F11 -> GAMEPLAY, CURRENTLY UNSTABLE)
 - Added experimental blood-decal projection filtering and rendering diagnostics
 
 ### Known Bug
