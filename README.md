@@ -1,6 +1,6 @@
 ## <img src="cod3recomplogo3.png" alt="logo" width="600" height="500">
 
-Enhanced Call of Duty 3 PC port based on CoD3Recomp. 
+Enhanced Call of Duty 3(XBOX 306 VERSION) PC port based on CoD3Recomp. 
 FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) (0.5.424)
 
 ### Changes
@@ -18,7 +18,7 @@ FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/C
 
 ## Disclosure 
 
-Game not included.
+Game not included. Needs XBOX 306 VERSION.
 
 Only focusing on the Campaign, Multiplayer not tested.
 
