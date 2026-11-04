@@ -1,4 +1,4 @@
-## <img src="cod3recomplogo.png" alt="logo" width="700" height="600">
+## <img src="cod3recomplogo.png" alt="logo" width="600" height="500">
 
 Enhanced Call of Duty 3 PC port based on CoD3Recomp. 
 FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) (0.5.424)
