@@ -19,6 +19,12 @@ Disclosure: Project was assisted with Codex and playtested by me.
 Game not included.
 
 ---
+OLD README BELOW
+
+
+
+
+
 
 # CoD3Recomp — full campaign + multiplayer fork
 
