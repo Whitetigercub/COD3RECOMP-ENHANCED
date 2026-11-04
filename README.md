@@ -29,7 +29,7 @@ Live rendering sometimes rejects decals with normal depth testing while depth-di
 Blood remaining visible after a checkpoint reload has been observed, but the original bug has not been reliably reproduced.
 
 
-**Possible causes (unconfirmed):**
+#### **Possible causes (unconfirmed):**
 
 Incorrect depth rejection or camera/decal projection alignment.
 
