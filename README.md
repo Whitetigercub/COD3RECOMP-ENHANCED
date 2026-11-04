@@ -1,3 +1,22 @@
+## COD3RECOMP-ENHANCED – Changelog
+
+FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) (0.5.424)
+
+### Changes
+
+- Fixed three broken buttons (RELOAD, BINOCULARS, OBJECTIVES)
+- Added mouse and keyboard button displays for UI
+- Added modern COD-style hitmarkers with sound, toggle and customizability
+- Added M1 Garand partial reload.
+- Added experimental blood with toggle. (F11-GAMEPLAY, CURRENTLY UNSTABLE)
+- Added experimental blood-decal projection filtering and rendering diagnostics.
+
+### Known Bug
+
+**Blood decals intermittently disappear or become invisible.** Player hits successfully create decals, and visible color writes have been confirmed. Root cause remains unidentified. Further investigation required.
+
+---
+
 # CoD3Recomp — full campaign + multiplayer fork
 
 **Call of Duty 3 (Xbox 360), statically recompiled to run natively on Windows PC.**
