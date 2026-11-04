@@ -16,7 +16,7 @@ FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/C
 
 **Blood decals intermittently disappear or become invisible.** Player hits successfully create decals, and visible color writes have been confirmed. Root cause remains unidentified. Further investigation required.
 
-# **Confirmed findings:**
+#### **Confirmed findings:**
 
 Blood decals can successfully write visible pixels.
 
