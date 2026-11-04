@@ -18,11 +18,15 @@ FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/C
 
 ## Disclosure 
 
-Project was assisted with Codex and playtested by me. You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them.
-
 Game not included.
 
 Only focusing on the Campaign, Multiplayer not tested.
+
+Project was assisted with Codex and playtested by me. You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them.
+
+
+
+
 
 
 
