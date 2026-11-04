@@ -15,6 +15,30 @@ FORKED FROM [https://github.com/hovg-N8/CoD3Recomp](https://github.com/hovg-N8/C
 ### Known Bug
 
 **Blood decals intermittently disappear or become invisible.** Player hits successfully create decals, and visible color writes have been confirmed. Root cause remains unidentified. Further investigation required.
+Confirmed findings:
+
+Blood decals can successfully write visible pixels.
+
+Controlled frozen-render tests preserved a synthetic decal for over three minutes.
+
+Source and copied depth coverage matched exactly in the validated test.
+
+Live rendering sometimes rejects decals with normal depth testing while depth-disabled rendering shows positive coverage.
+
+Blood remaining visible after a checkpoint reload has been observed, but the original bug has not been reliably reproduced.
+
+Possible causes (unconfirmed):
+
+Incorrect depth rejection or camera/decal projection alignment.
+
+Later rendering passes overwriting or obscuring blood pixels.
+
+First-person weapon rendering or foreground layering.
+
+Depth-buffer state changes during live rendering.
+
+Potential interactions with MSAA or depth-buffer sampling.
+
 
 ## Disclosure 
 
