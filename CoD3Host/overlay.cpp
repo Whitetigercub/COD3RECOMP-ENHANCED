@@ -1,3 +1,4 @@
+#include "blood_test_mode.h"
 #include "version.h"
 #include "overlay.h"
 #include "kernel.h"
@@ -763,6 +764,7 @@ namespace
                         if(changed){auto live=Settings::Get();live.blood=b;Settings::Preview(live);pendingSave=true;}
                         if(pendingSave&&!ImGui::IsAnyItemActive()){Settings::Save();pendingSave=false;}
                         ImGui::TextDisabled("Blood changes apply immediately and save automatically.");
+                        if(BloodTest::Available()){ImGui::Separator();BloodTest::UI(false);}
                         ImGui::TextDisabled("Vertical slice: impacts and static-surface splatters. Pooling and trails follow after testing.");
                     }
 
@@ -1168,6 +1170,7 @@ bool Overlay::HandleMessage(void* hwnd, uint32_t message, uint64_t wParam, int64
     std::lock_guard<std::recursive_mutex> lock(g_mutex);
     if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
     {
+        if (BloodTest::Key(uint32_t(wParam))) return true;
         if (wParam == VK_F11) { Toggle(); return true; }
         // F12: the picture, and the next frame's draws to the log, so a
         // fault seen while playing can be read afterwards.
@@ -1246,7 +1249,7 @@ bool Overlay::Render(ID3D11RenderTargetView* back, ID3D11Texture2D* backTexture,
     const bool streakHud = streakHudActive && streakHudDraw && streakHudActive();
     const bool marker = Hitmarkers::Active(values);
     const bool notice = NoticeShown();
-    if (!open && !console && !hud && !menuHud && !streakHud && !marker && !notice && !values.fpsOverlay && !values.statsOverlay) return false;
+    if (!open && !console && !hud && !menuHud && !streakHud && !marker && !notice && !values.fpsOverlay && !values.statsOverlay && !BloodTest::Active()) return false;
 
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
@@ -1278,6 +1281,7 @@ bool Overlay::Render(ID3D11RenderTargetView* back, ID3D11Texture2D* backTexture,
     if (streakHud) streakHudDraw(width, height);
     if (menuHud) menuHudDraw(width, height);
     if (notice) DrawNotice(width, height);
+    if (BloodTest::Active() && !open) BloodTest::UI(true);
     if (open) DrawMenu(width, height);
     else if (console) DrawConsole(width, height);
     ImGui::Render();

@@ -1,4 +1,5 @@
 #include "blood_diag.h"
+#include "blood_test_mode.h"
 extern void BloodDiagnosticEye(float* eye);
 #include "blood_render.h"
 #include "blood.h"
@@ -17,6 +18,7 @@ namespace {
 ComPtr<ID3D11VertexShader> vs;ComPtr<ID3D11PixelShader> ps;
 ComPtr<ID3D11Buffer> vertices,constants;ComPtr<ID3D11InputLayout> layout;
 ComPtr<ID3D11BlendState> blend;ComPtr<ID3D11DepthStencilState> depth;ComPtr<ID3D11RasterizerState> raster;
+ComPtr<ID3D11DepthStencilState> testNoDepth;ComPtr<ID3D11BlendState> testMute;
 constexpr int Capacity=Blood::MaxVertices;
 bool Initialize(ID3D11Device* device){
  if(vs)return true;
@@ -45,12 +47,15 @@ bool Initialize(ID3D11Device* device){
  D3D11_DEPTH_STENCIL_DESC ds{};ds.DepthEnable=true;ds.DepthWriteMask=D3D11_DEPTH_WRITE_MASK_ZERO;ds.DepthFunc=D3D11_COMPARISON_GREATER_EQUAL;
  D3D11_RASTERIZER_DESC rs{};rs.FillMode=D3D11_FILL_SOLID;rs.CullMode=D3D11_CULL_NONE;rs.DepthClipEnable=true;rs.MultisampleEnable=true;rs.DepthBias=32;rs.SlopeScaledDepthBias=1.0f;rs.DepthBiasClamp=.00002f;
  if(FAILED(device->CreateBlendState(&blendDesc,&blend))||FAILED(device->CreateDepthStencilState(&ds,&depth))||FAILED(device->CreateRasterizerState(&rs,&raster)))return false;
+ ds.DepthEnable=false;ds.DepthFunc=D3D11_COMPARISON_ALWAYS;blendDesc.RenderTarget[0].RenderTargetWriteMask=0;
+ if(BloodTest::Available()&&(FAILED(device->CreateDepthStencilState(&ds,&testNoDepth))||FAILED(device->CreateBlendState(&blendDesc,&testMute))))return false;
  vs=newVs;return true;
 }
 }
-bool BloodRender::Draw(ID3D11Device* device,ID3D11DeviceContext* context,const Projection& projection){
+bool BloodRender::Draw(ID3D11Device* device,ID3D11DeviceContext* context,const Projection& projection,const Blood::WorldVertex* fixture,int fixtureCount,bool disableDepth,bool colorWrites){
  static thread_local std::array<Blood::WorldVertex,Capacity> data;
- int count=Blood::BuildWorld(data.data(),Capacity);if(!count||!Initialize(device))return false;
+ int count=fixture?std::clamp(fixtureCount,0,Capacity):Blood::BuildWorld(data.data(),Capacity);if(!count||!Initialize(device))return false;
+ if(fixture)memcpy(data.data(),fixture,count*sizeof(data[0]));
  D3D11_MAPPED_SUBRESOURCE map{};
  if(FAILED(context->Map(vertices.Get(),0,D3D11_MAP_WRITE_DISCARD,0,&map)))return false;
  memcpy(map.pData,data.data(),count*sizeof(data[0]));context->Unmap(vertices.Get(),0);
@@ -60,7 +65,7 @@ bool BloodRender::Draw(ID3D11Device* device,ID3D11DeviceContext* context,const P
  UINT stride=sizeof(Blood::WorldVertex),offset=0;ID3D11Buffer* buffer=vertices.Get();context->IASetVertexBuffers(0,1,&buffer,&stride,&offset);
  context->IASetInputLayout(layout.Get());context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
  context->VSSetShader(vs.Get(),nullptr,0);context->PSSetShader(ps.Get(),nullptr,0);context->GSSetShader(nullptr,nullptr,0);
- context->RSSetState(raster.Get());context->OMSetBlendState(blend.Get(),nullptr,0xffffffff);context->OMSetDepthStencilState(depth.Get(),0);
+ context->RSSetState(raster.Get());context->OMSetBlendState(colorWrites?blend.Get():testMute.Get(),nullptr,0xffffffff);context->OMSetDepthStencilState(disableDepth?testNoDepth.Get():depth.Get(),0);
  static std::array<ComPtr<ID3D11Query>,4> diagQueries;static bool pending[4]{};static unsigned nextQuery=0;int query=-1;
  static std::array<ComPtr<ID3D11Query>,8> decalQueries;static bool decalPending[8]{};static uint64_t lastDecalProbe=0;
  if(BloodDiag::On()){
@@ -118,6 +123,19 @@ if(BloodDiag::On()){
   context->OMSetBlendState(blend.Get(),nullptr,0xffffffff);context->OMSetDepthStencilState(depth.Get(),0);
  }
 }
+
+
+ if(fixture&&colorWrites&&BloodTest::Available()){
+  static ComPtr<ID3D11Query> tests[2];static bool pending=false;static uint64_t generation=0,last=0;
+  if(pending){UINT64 a=0,b=0;if(context->GetData(tests[0].Get(),&a,8,D3D11_ASYNC_GETDATA_DONOTFLUSH)==S_OK&&context->GetData(tests[1].Get(),&b,8,D3D11_ASYNC_GETDATA_DONOTFLUSH)==S_OK){BloodTest::Samples(generation,a,b);pending=false;}}
+  auto now=GetTickCount64();if(!pending&&now-last>=250){last=now;auto state=BloodTest::Get();generation=state.generation;
+   context->OMSetBlendState(testMute.Get(),nullptr,0xffffffff);
+   bool ok=true;for(int i=0;i<2;i++){if(!tests[i]){D3D11_QUERY_DESC q{D3D11_QUERY_OCCLUSION,0};device->CreateQuery(&q,&tests[i]);}if(!tests[i]){ok=false;break;}
+    context->OMSetDepthStencilState(i?testNoDepth.Get():depth.Get(),0);context->Begin(tests[i].Get());context->Draw(count,0);context->End(tests[i].Get());}
+   pending=ok;context->OMSetBlendState(blend.Get(),nullptr,0xffffffff);context->OMSetDepthStencilState(disableDepth?testNoDepth.Get():depth.Get(),0);
+  }
+  BloodTest::Submitted(projection.diagFrame,count,true);
+ }
 
  // Native shaders fetch vertices through SRVs and use no input layout.
  context->IASetInputLayout(nullptr);buffer=nullptr;context->IASetVertexBuffers(0,1,&buffer,&stride,&offset);

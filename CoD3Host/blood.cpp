@@ -1,4 +1,6 @@
 #include "blood_diag.h"
+#include "blood_test_mode.h"
+#include "modules.h"
 #include "blood.h"
 #include "blood_math.h"
 #include "kernel.h"
@@ -150,7 +152,7 @@ void Blood::Configure(const Options& input){
  // Discard render packets immediately; they are rebuilt with the new settings.
  options=next;enabled.store(next.enabled&&next.amount>0,std::memory_order_relaxed);
 }
-void Blood::Clear(){std::lock_guard<std::mutex> lock(mutex);Reset("map_or_checkpoint_restore");camera.valid=false;}
+void Blood::Clear(){BloodTest::MapChanged();std::lock_guard<std::mutex> lock(mutex);Reset("map_or_checkpoint_restore");camera.valid=false;}
 void Blood::Before(PPCContext& ctx,uint8_t* base,Impact& e){
  if(!enabled.load(std::memory_order_relaxed))return;
  uint32_t target=ctx.r3.u32,point=ctx.r7.u32,dir=ctx.r6.u32;
@@ -203,6 +205,21 @@ int Blood::BuildWorld(WorldVertex* output,int capacity){
  return count;
 }
 Blood::Stats Blood::Status(){std::lock_guard<std::mutex> lock(mutex);Stats s;s.queued=queued;s.traces=traces;for(auto p:particles)s.particles+=p.life>0;for(const auto& d:decals)s.decals+=d.size>0;return s;}
-void Blood::Update(PPCContext& ctx,uint8_t* base){Frame(ctx,base);}
+void Blood::Update(PPCContext& ctx,uint8_t* base){BloodTest::Update(ctx,base);Frame(ctx,base);}
 
 void BloodDiagnosticEye(float* eye){std::lock_guard<std::mutex> lock(mutex);eye[0]=camera.eye.x;eye[1]=camera.eye.y;eye[2]=camera.eye.z;}
+
+// Diagnostic-only surface selection; no native entity/camera/level writes.
+bool Blood::CaptureTestSurface(PPCContext& ctx,uint8_t* base,float* point,float* normal,float* eye,float* forward){
+ if(!*Modules::LoadedName())return false;
+ std::lock_guard<std::mutex> lock(mutex);const uint32_t index=Guest::Read32(base,0x82A2A1C8);if(index>3)return false;
+ const uint32_t view=0x82A98D90+5840*index;V e=Read(base,view+4480),f=Read(base,view+4496);
+ if(!Finite(e)||!Finite(f)||std::fabs(Dot(f,f)-1)>.05f)return false;
+ traces=0;Hit hit;
+ if(BloodTest::Get().floor){V from=e+f*160;hit=Trace(ctx,base,from,from+V{0,0,-256});}
+ else hit=Trace(ctx,base,e,e+f*1024);
+ if(!hit.valid||hit.fraction>=1||Dot(hit.n,hit.n)<.25f)return false;
+ auto visible=Trace(ctx,base,e,hit.p+Unit(hit.n)*.1f);if(!visible.valid||visible.fraction<.99f)return false;
+ float p[3]={hit.p.x,hit.p.y,hit.p.z},n[3]={hit.n.x,hit.n.y,hit.n.z},ep[3]={e.x,e.y,e.z},fp[3]={f.x,f.y,f.z};
+ memcpy(point,p,12);memcpy(normal,n,12);memcpy(eye,ep,12);memcpy(forward,fp,12);return true;
+}

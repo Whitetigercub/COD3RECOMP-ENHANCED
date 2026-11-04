@@ -13,6 +13,8 @@
 
 #include "render.h"
 #include "blood_render.h"
+#include "blood_test_mode.h"
+#include "blood_test_gpu.h"
 #include "render_state.h"
 #include "render_commands.h"
 #include "render_internal.h"
@@ -983,9 +985,14 @@ namespace
             const D3D11_VIEWPORT viewport{0,0,float(command.targetWidth),float(command.targetHeight),0,1};
             g_context->RSSetViewports(1,&viewport);
             if(BloodDiag::On()){static uint64_t last=0;auto now=GetTickCount64();if(now-last>=1000){last=now;BloodDiag::Log("selected frame=%llu source_vs=%016llX source_pass=%s source_depth=%08X source_mask=%08X near=%.6f far=%.6f target=%p depth_target=%p trigger_is_world=%d",bloodProjection.diagFrame,bloodProjection.diagShader,bloodProjection.diagPass?"depth_only":"opaque_color_depth_write",bloodProjection.diagDepth,bloodProjection.diagMask,bloodProjection.diagNear,bloodProjection.diagFar,bloodTarget,bloodDepth,command.bloodWorldStage);for(int row=0;row<4;row++)BloodDiag::Log("selected_matrix frame=%llu row=%d values=%.9g,%.9g,%.9g,%.9g",bloodProjection.diagFrame,row,bloodProjection.matrix[row*4],bloodProjection.matrix[row*4+1],bloodProjection.matrix[row*4+2],bloodProjection.matrix[row*4+3]);}}
-            BloodPixelsBefore(command.colorTexture,bloodProjection.diagFrame);
-            BloodRender::Draw(g_device.Get(),g_context.Get(),bloodProjection);
-            BloodPixelsAfter();
+            if(BloodTest::Active()){
+                BloodTestGpu::Observe(g_device.Get(),g_context.Get(),bloodTarget,bloodDepth,bloodProjection,command.targetWidth,command.targetHeight);
+                if(!BloodTest::Get().frozen){Blood::WorldVertex fixture[36];int count=BloodTest::Build(fixture,36);if(count)BloodRender::Draw(g_device.Get(),g_context.Get(),bloodProjection,fixture,count,BloodTest::Get().depthOff);else BloodTest::Submitted(bloodProjection.diagFrame,0,false);}
+            }else{
+                BloodPixelsBefore(command.colorTexture,bloodProjection.diagFrame);
+                BloodRender::Draw(g_device.Get(),g_context.Get(),bloodProjection);
+                BloodPixelsAfter();
+            }
             // Target binding also changes when the batch is empty.
             ForgetBindings();
         }
@@ -2322,6 +2329,15 @@ namespace
                          g_backView.Get(), viewport, program, g_linearSampler.Get(), GammaTable());
             }
         }
+        if(BloodTest::Available()){
+            const auto fixture=BloodTestGpu::FrozenFrame(g_device.Get(),g_context.Get());
+            if(fixture.resource){
+                const float aspect=16.f/9.f;float w=float(clientWidth),h=w/aspect;if(h>clientHeight){h=float(clientHeight);w=h*aspect;}
+                const D3D11_VIEWPORT viewport{floorf((clientWidth-w)*.5f),floorf((clientHeight-h)*.5f),floorf(w),floorf(h),0,1};
+                DrawQuad(fixture.resource,fixture.width,fixture.height,fixture.x0,fixture.y0,fixture.x1-fixture.x0,fixture.y1-fixture.y0,g_backView.Get(),viewport,g_presentPixelShader.Get(),g_linearSampler.Get(),GammaTable());
+            }
+            ForgetBindings();
+        }
         // The menu, the counters and the screenshot key, over the picture.
         Overlay::Initialize(g_swapChainWindow, g_device.Get(), g_context.Get());
         if (!hdr) Overlay::Render(g_backView.Get(), g_backTexture.Get(), clientWidth, clientHeight);
@@ -2349,6 +2365,7 @@ namespace
         g_context->OMSetRenderTargets(1, noTargets, nullptr);
         ForgetBindings();
         BloodPixelsFinal();
+        if(BloodTest::Active()&&BloodTest::TakeScreenshot()) Overlay::SaveScreenshot(g_backTexture.Get(),clientWidth,clientHeight,g_hdrSwapChain?g_hdrValues[1]/80.f:0.f);
         DumpFrame(g_backTexture.Get());
 
         RenderStats::EndGpuFrame();

@@ -15,6 +15,7 @@ void Clamp(Options& options);
 void Configure(const Options& options);
 void Clear();
 void Update(PPCContext& context,uint8_t* base);
+bool CaptureTestSurface(PPCContext&,uint8_t*,float* point,float* normal,float* eye,float* forward);
 void Before(PPCContext& context,uint8_t* base,Impact& impact);
 void After(uint8_t* base,const Impact& impact);
 bool Active();

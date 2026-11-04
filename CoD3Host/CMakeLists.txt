@@ -65,6 +65,8 @@ set(COD3_HOST_SOURCES
     "blood.cpp"
     "blood_render.cpp"
     "blood_native.cpp"
+    "blood_test_mode.cpp"
+    "blood_test_gpu.cpp"
     "settings.cpp"
     "overlay.cpp"
     "../thirdparty/imgui/imgui.cpp"
