@@ -54,7 +54,8 @@ namespace
 
     bool g_borderless = false;
     WINDOWPLACEMENT g_placement{};
-    std::atomic<bool> g_toggleWanted{ false };   // Alt+Enter
+    std::atomic<bool> g_toggleWanted{ false };
+    unsigned g_pointerButtons=0; // temporary Win32 button capture, never gameplay clipping   // Alt+Enter
 
     void ReportSize(HWND window)
     {
@@ -136,11 +137,26 @@ namespace
         if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN || message == WM_LBUTTONDOWN ||
             message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN || message == WM_XBUTTONDOWN || message == WM_MOUSEWHEEL)
             ButtonPrompts::KeyboardUsed();
-        if (Overlay::HandleMessage(window, message, uint64_t(w), int64_t(l))) return 0;
-        if(message==WM_KILLFOCUS || message==WM_ENTERSIZEMOVE || message==WM_CANCELMODE)
+        // Receive a matching release even if a menu drag leaves the client.
+        // Clear our tracking before ReleaseCapture sends WM_CAPTURECHANGED.
+        if(message==WM_LBUTTONUP || message==WM_RBUTTONUP) {
+            g_pointerButtons&=~(message==WM_LBUTTONUP?1u:2u);
+            if(!g_pointerButtons && GetCapture()==window) ReleaseCapture();
+        }
+        if(message==WM_CAPTURECHANGED && g_pointerButtons) {
+            g_pointerButtons=0;NativeMenuPointer::Cancel();
+        }
+        if(message==WM_KILLFOCUS || message==WM_ENTERSIZEMOVE || message==WM_CANCELMODE) {
+            g_pointerButtons=0;
+            if(GetCapture()==window) ReleaseCapture();
             NativeMenuPointer::Cancel();
+        }
+        if (Overlay::HandleMessage(window, message, uint64_t(w), int64_t(l))) return 0;
         if(NativeMenuPointer::Active() && (message==WM_LBUTTONDOWN || message==WM_LBUTTONUP ||
             message==WM_RBUTTONDOWN || message==WM_RBUTTONUP)) {
+            if(message==WM_LBUTTONDOWN || message==WM_RBUTTONDOWN) {
+                g_pointerButtons|=message==WM_LBUTTONDOWN?1u:2u;SetCapture(window);
+            }
             NativeMenuPointer::Button(message==WM_RBUTTONDOWN || message==WM_RBUTTONUP,
                 message==WM_LBUTTONDOWN || message==WM_RBUTTONDOWN,
                 int(short(LOWORD(l))),int(short(HIWORD(l))));

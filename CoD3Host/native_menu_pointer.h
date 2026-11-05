@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 namespace NativeMenuPointer {
-// True only for the supported campaign Single Player page; other menus keep
-// their existing controls until their widgets have been mapped and tested.
+// The supported campaign menu/dialog owns pointer input, including while
+// locked or transitioning, to prevent legacy clicks reaching an underlying UI.
 bool Active();
 bool InMission();
 bool MenuVisible();
