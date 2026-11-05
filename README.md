@@ -68,6 +68,7 @@ The game sometimes copies the scene to a separate texture for display. Sol check
 The latest comparison build passed **168 diagnostic checks**, the developer-mode opt-out check, and **27 normal-renderer checks**. The installed executable/settings weren't changed. **The comparison code and patch are still local/archived, not committed or pushed to GitHub yet.**
 
 **The actual bug is STILL UNSOLVED.** The next useful test is to catch a **real, gameplay-generated** blood stain going from visible to invisible on the same unobstructed surface, with Permanent decals enabled and the pool set to 4,096. Screenshot it before and after, and keep the settings and logs. No random renderer fixes based on a synthetic stain that behaves itself.
+## BUT!
 
 I HAVE A PLAN B: ISOLATED TESTING AREA, GRAY WALLS AND A STATIONARY ENEMY. HAVEN'T TESTED BUT IT'S A HYPOTHESIS.
 
