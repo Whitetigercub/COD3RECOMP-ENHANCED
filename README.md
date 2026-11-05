@@ -25,7 +25,7 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 - **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES. Yes, basic buttons. They were busted.
 - Added **mouse and keyboard button icons/prompts** to the UI.
-- Added **native menu mouse support (preview)**: cursor-based hover and click detection instead of faking D-pad movement on mapped campaign menus. **Single Player hover, clicking, and empty-space rejection are playtested and confirmed.** Extended menu/dialog/options/pause coverage is still a work in progress.
+- **NEW** Added **native menu mouse support (preview)**: cursor-based hover and click detection instead of faking D-pad movement on mapped campaign menus. **Single Player hover, clicking, and empty-space rejection are playtested and confirmed.** Extended menu/dialog/options/pause coverage is still a work in progress.
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**, because throwing away the whole clip behavior every time wasn't what I wanted.
 - Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore. **CURRENTLY UNSTABLE.**
