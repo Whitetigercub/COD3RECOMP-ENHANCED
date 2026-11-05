@@ -7,6 +7,8 @@ This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. I mainly 
 
 The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. Legal shit, I know.
 
+If you want the less sweary write-up, [here's the formal README](docs/README-FORMAL-BACKUP.md). Same project, fewer F-bombs.
+
 ## Credit where it's due
 
 **[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) → [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) → [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
@@ -40,7 +42,19 @@ In live rendering, normal depth testing has rejected some decal coverage while d
 
 **Current suspects, NOT confirmed causes:** depth or camera-projection mismatch, depth-buffer timing, later render passes covering the blood, first-person weapon/foreground layering, resource-state issues, or MSAA interactions.
 
-**Next test:** take the **same synthetic decal in the same live frame**, inspect it immediately after its blood draw, then inspect the final rendered scene. Same geometry, projection, and frame ID. If the pixels are there at first but gone at the end, something later may be covering them. If they never write, investigate the draw/depth path. **No random fixes until there's evidence.**
+### Update: live blood comparison finished (November 2026)
+
+Sol ran the same-frame comparison. **24 paired frames** were captured with matching fixture/projection hashes, and every measured draw call succeeded. **Seven frames had TWO blood insertions**, so counting each actual draw matters.
+
+For **five consecutive live frames**, the test stain passed **317 normal-depth and 317 depth-disabled samples** at both the early and late checks, and **102 RGB pixels actually changed** in each frame. In other words, blood *can* draw correctly and stay there through the sampled rendering stages.
+
+Other samples failed the **initial depth test** even though depth-disabled coverage was positive. That's a real observation, but **it does NOT prove the rejection was wrong**. Some captures involved foreground overlap or the Mission Failed screen, so those aren't evidence of blood mysteriously vanishing during normal gameplay.
+
+The game sometimes copies the scene to a separate texture for display. Sol checked that the changed pixels fell inside the copied region and matched the selected presentation texture. **No later pass erasing blood was proven.**
+
+The latest comparison build passed **168 diagnostic checks**, the developer-mode opt-out check, and **27 normal-renderer checks**. The installed executable/settings weren't changed. **The comparison code and patch are still local/archived, not committed or pushed to GitHub yet.**
+
+**The actual bug is STILL UNSOLVED.** The next useful test is to catch a **real, gameplay-generated** blood stain going from visible to invisible on the same unobstructed surface, with Permanent decals enabled and the pool set to 4,096. Screenshot it before and after, and keep the settings and logs. No random renderer fixes based on a synthetic stain that behaves itself.
 
 For now, if the blood effects piss you off too, disable them in **F11 → Gameplay → Blood & Gore**.
 
