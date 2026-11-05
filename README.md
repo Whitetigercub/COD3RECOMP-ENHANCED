@@ -29,8 +29,6 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 - Added **experimental blood decals and adjustable blood clouds**. F11 → Gameplay → Blood & Gore. **CURRENTLY UNSTABLE.**
 - Added experimental blood-decal projection filtering and rendering diagnostics.
 
-Nothing here is supposed to rewrite the entire game. I wanted the damn campaign to feel better on PC.
-
 ## THE KNOWN BUG: BLOOD DECALS KEEP FUCKING DISAPPEARING
 
 I'm not going to sugarcoat this: the experimental blood decals are **buggy as hell**. Sometimes they're visible, sometimes they disappear. The exact cause is **STILL UNKNOWN**.
@@ -67,10 +65,10 @@ These commands come from the existing upstream build script and README. I haven'
 
 ## AI disclosure, because I won't pretend otherwise
 
-**This project was assisted with Codex and playtested by me.** You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them.
+**This project was assisted with Codex and playtested by me.** You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them. Also this README was also written by Codex, haha. But this wasn't. Neither this. I'm not lying. I'm just wasting your time.
 
-I still decide what goes into my fork, and I actually play the damn game.
+I still decide what goes into my fork, and I actually play the dang game.
 
 Original game assets are not provided. Upstream code and third-party components keep their own attribution and licensing requirements. This README doesn't magically relicense anybody else's work.
 
-If you're looking for some polished, bug-free miracle port, **this ain't it yet**. I'm tinkering with a game I wanted to play on PC, fixing things as I go, and documenting the bugs instead of hiding them.
+If you're looking for some polished, bug-free miracle port, **this ain't it, bro**. I'm tinkering with a game I wanted to play on PC, fixing things as I go, and documenting the bugs instead of hiding them.
