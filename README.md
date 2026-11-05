@@ -1,6 +1,5 @@
-<img src="cod3recomplogo3.png" alt="COD3RECOMP-ENHANCED logo" width="600">
+# <img src="cod3recomplogo3.png" alt="COD3RECOMP-ENHANCED logo" width="600">
 
-# COD3RECOMP-ENHANCED
 
 **Call of Duty 3 (Xbox 360) on PC, with some shit I wanted fixed.**
 
