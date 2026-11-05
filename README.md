@@ -3,7 +3,7 @@
 Enhanced Call of Duty 3 (XBOX 360) PC port based on CoD3Recomp. 
 Based on hovg-N8/CoD3Recomp (0.5.424), which is based on FrankHUN88453/CoD3Recomp
 
-### Changes Added in this fork
+### Changes added in this fork
 
 - Fixed three broken buttons (RELOAD, BINOCULARS, OBJECTIVES)
 - Added mouse and keyboard button displays for UI
