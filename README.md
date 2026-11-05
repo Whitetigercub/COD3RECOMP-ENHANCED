@@ -35,19 +35,19 @@ You must supply your **own Xbox 360 version** of Call of Duty 3. No game content
 
 The upstream build instructions call for **CMake 3.20+**, **Ninja**, **Clang**, and **Visual Studio Build Tools with Windows SDK headers**. Clang is required for the recompilation toolchain.
 
-Place a \`default.xex\` from your own Xbox 360 game dump at \`CoD3RecompLib/private/default.xex\`, then run this command from the repository root in PowerShell:
+Place a `default.xex` from your own Xbox 360 game dump at `CoD3RecompLib/private/default.xex`, then run this command from the repository root in PowerShell:
 
-\`\`\`powershell
+```powershell
 .\scripts\recompile.ps1 -BuildTools -BuildLib -BuildHost
-\`\`\`
+```
 
-Once built, launch \`CoD3.exe\` from its output location. If there is no \`game\` folder beside the executable, the first-run setup can use an Xbox 360 disc image or an extracted game directory. To specify an image from the command line:
+Once built, launch `CoD3.exe` from its output location. If there is no `game` folder beside the executable, the first-run setup can use an Xbox 360 disc image or an extracted game directory. To specify an image from the command line:
 
-\`\`\`powershell
+```powershell
 .\CoD3.exe --iso "D:\path\Call of Duty 3.iso"
-\`\`\`
+```
 
-The launch command above assumes PowerShell is running in the directory containing \`CoD3.exe\`. See the [archived upstream instructions](docs/UPSTREAM-README.md#build) for detailed options and [STATUS.md](STATUS.md) for upstream implementation notes. These instructions are documented from the repository's build script and prior README, not a fresh build verification.
+The launch command above assumes PowerShell is running in the directory containing `CoD3.exe`. See the [archived upstream instructions](docs/UPSTREAM-README.md#build) for detailed options and [STATUS.md](STATUS.md) for upstream implementation notes. These instructions are documented from the repository's build script and prior README, not a fresh build verification.
 
 ## Known bug: intermittent blood decal disappearance
 
