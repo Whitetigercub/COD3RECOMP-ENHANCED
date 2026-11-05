@@ -3,7 +3,7 @@
 
 **Call of Duty 3 (Xbox 360) on PC, with some shit I wanted fixed.**
 
-This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. I mainly give a shit about the **single-player campaign**. I'm fixing annoyances, adding a few modern touches, and occasionally fighting the renderer because apparently the blood decals have a personal vendetta against me.
+This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. I mainly give a shit about the **single-player campaign**, fixing annoyances and adding a few modern touches.
 
 The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. Legal shit, I know.
 
