@@ -1,5 +1,3 @@
-# COD3RECOMP-ENHANCED
-
 <img src="cod3recomplogo3.png" alt="COD3RECOMP-ENHANCED logo" width="600">
 
 An enhanced **Call of Duty 3 (Xbox 360) PC recompilation** fork focused on campaign fixes, quality-of-life changes, and experimental blood effects. The upstream codebase is based on version **0.5.424**.
