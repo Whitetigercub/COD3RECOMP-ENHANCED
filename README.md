@@ -1,72 +1,76 @@
 <img src="cod3recomplogo3.png" alt="COD3RECOMP-ENHANCED logo" width="600">
 
-An enhanced **Call of Duty 3 (Xbox 360) PC recompilation** fork focused on campaign fixes, quality-of-life changes, and experimental blood effects. The upstream codebase is based on version **0.5.424**.
+# COD3RECOMP-ENHANCED
 
-## Project lineage and credits
+**Call of Duty 3 (Xbox 360) on PC, with some shit I wanted fixed.**
 
-**[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) → [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) → COD3RECOMP-ENHANCED (this fork).**
+This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. I mainly give a shit about the **single-player campaign**. I'm fixing annoyances, adding a few modern touches, and occasionally fighting the renderer because apparently the blood decals have a personal vendetta against me.
 
-FrankHUN88453 created the original recompilation project, including its host runtime and Direct3D 11 renderer. hovg-N8 built on that work through version 0.5.424, adding major campaign, multiplayer, and performance improvements. This fork adds the changes listed separately below. Credit for inherited features belongs to their original contributors.
+The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3.
 
-The earlier upstream READMEs are preserved in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md). For detailed upstream development history, see [docs/PATCH-NOTES.md](docs/PATCH-NOTES.md).
+## Credit where it's due
 
-## Features inherited from hovg-N8 (not added by this fork)
+**[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) → [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) → [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
 
-The upstream 0.5.424 README describes a playable campaign, multiplayer over System Link (LAN or Tailscale), bots and custom classes, expanded player counts, killstreaks and killcam, experimental co-op, HDR/RenoDX options, texture enhancements, and performance work.
+Frank started the recompilation project and PC renderer. hovg-N8 built a hell of a lot on top of it through 0.5.424. I didn't make their work and I'm not going to pretend I did.
 
-**Multiplayer is inherited from hovg-N8; it has not been tested by the maintainer of COD3RECOMP-ENHANCED.** Upstream functionality and claims should not be mistaken for independent validation in this fork.
+The upstream project already has major campaign improvements, multiplayer features, bots, killstreaks, HDR options, performance changes, and more. **Those are NOT my additions.**
 
-## Changes added in COD3RECOMP-ENHANCED
+And to be clear, **I HAVE NOT TESTED MULTIPLAYER.** hovg-N8's fork has multiplayer functionality, but I'm working on the campaign, so I'm not going to claim I've personally verified that shit.
 
-- Fixed three broken actions: **Reload, Binoculars, and Objectives**.
-- Added mouse-and-keyboard button prompts in the interface.
-- Added modern-style hitmarkers with optional sound and settings in **F11 → Gameplay**.
-- Added an **M1 Garand partial reload**.
-- Added **experimental blood decals and adjustable blood clouds**, configurable in **F11 → Gameplay → Blood & Gore**. This feature is currently unstable.
+I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md), and their big development history is in [docs/PATCH-NOTES.md](docs/PATCH-NOTES.md). No one's credits got thrown in the trash.
+
+## What I actually changed
+
+- **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES. Yes, basic buttons. They were busted.
+- Added **mouse and keyboard button icons/prompts** to the UI.
+- Added **modern COD-style hitmarkers**, with sound and customization. F11 → Gameplay.
+- Added **M1 Garand partial reload**, because throwing away the whole clip behavior every time wasn't what I wanted.
+- Added **experimental blood decals and adjustable blood clouds**. F11 → Gameplay → Blood & Gore. **CURRENTLY UNSTABLE.**
 - Added experimental blood-decal projection filtering and rendering diagnostics.
 
-These are the enhanced fork's changes; the much larger upstream feature set above was not authored here. This fork has not been given a separate numbered release version.
+Nothing here is supposed to rewrite the entire game. I wanted the damn campaign to feel better on PC.
 
-## Quick start / build from source (Windows)
+## THE KNOWN BUG: BLOOD DECALS KEEP FUCKING DISAPPEARING
 
-You must supply your **own Xbox 360 version** of Call of Duty 3. No game content, precompiled game executable, or copyrighted disc image is provided by this repository.
+I'm not going to sugarcoat this: the experimental blood decals are **buggy as hell**. Sometimes they're visible, sometimes they disappear. The exact cause is **STILL UNKNOWN**.
 
-The upstream build instructions call for **CMake 3.20+**, **Ninja**, **Clang**, and **Visual Studio Build Tools with Windows SDK headers**. Clang is required for the recompilation toolchain.
+Here's what we actually know: real decals have been generated, and visible pixel writes have been confirmed. In a separate diagnostic build, a **synthetic test decal stayed visible for over three minutes**. The frozen source/copy depth coverage matched at **740/740 samples**, with **156 diagnostic checks and 27 normal-renderer checks passed**.
 
-Place a `default.xex` from your own Xbox 360 game dump at `CoD3RecompLib/private/default.xex`, then run this command from the repository root in PowerShell:
+I've also seen blood stay on the ground after reloading a checkpoint. Nice, but **that does NOT mean the bug is fixed**.
+
+In live rendering, normal depth testing has rejected some decal coverage while depth-disabled rendering showed coverage. That could be legitimate occlusion. It is **not proof** that depth testing is broken.
+
+**Current suspects, NOT confirmed causes:** depth or camera-projection mismatch, depth-buffer timing, later render passes covering the blood, first-person weapon/foreground layering, resource-state issues, or MSAA interactions.
+
+**Next test:** take the **same synthetic decal in the same live frame**, inspect it immediately after its blood draw, then inspect the final rendered scene. Same geometry, projection, and frame ID. If the pixels are there at first but gone at the end, something later may be covering them. If they never write, investigate the draw/depth path. **No random fixes until there's evidence.**
+
+For now, if the blood effects piss you off too, disable them in **F11 → Gameplay → Blood & Gore**.
+
+## Building this thing (Windows)
+
+You'll need your **own Xbox 360 game dump**, not files from this repo. The upstream build needs **CMake 3.20+**, **Ninja**, **Clang**, and **Visual Studio Build Tools / Windows SDK**. Clang is required here.
+
+Put your own `default.xex` in `CoD3RecompLib/private/default.xex`. From the repo root, run:
 
 ```powershell
 .\scripts\recompile.ps1 -BuildTools -BuildLib -BuildHost
 ```
 
-Once built, launch `CoD3.exe` from its output location. If there is no `game` folder beside the executable, the first-run setup can use an Xbox 360 disc image or an extracted game directory. To specify an image from the command line:
+Then run the built `CoD3.exe` from its output directory. On first launch, setup can use a disc image or an extracted game folder. To point it straight at an ISO, run this **from the executable's folder**:
 
 ```powershell
 .\CoD3.exe --iso "D:\path\Call of Duty 3.iso"
 ```
 
-The launch command above assumes PowerShell is running in the directory containing `CoD3.exe`. See the [archived upstream instructions](docs/UPSTREAM-README.md#build) for detailed options and [STATUS.md](STATUS.md) for upstream implementation notes. These instructions are documented from the repository's build script and prior README, not a fresh build verification.
+These commands come from the existing upstream build script and README. I haven't freshly verified a clean build on every machine, so I'm not going to bullshit you about that. More details are in the [archived build instructions](docs/UPSTREAM-README.md#build) and [STATUS.md](STATUS.md).
 
-## Known bug: intermittent blood decal disappearance
+## AI disclosure, because I won't pretend otherwise
 
-**Status: Unresolved. No confirmed root cause or permanent fix.**
+**This project was assisted with Codex and playtested by me.** You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them.
 
-Experimental blood decals sometimes disappear or become invisible during live gameplay. Decal generation and visible color writes have been observed, but the intermittent disappearance has not been reproduced in a controlled test.
+I still decide what goes into my fork, and I actually play the damn game.
 
-**What has actually been validated:** A deterministic synthetic blood decal remained stable in a frozen rendering test for more than three minutes. The source and copied depth produced matching coverage (**740/740 samples**), with **156 diagnostic checks and 27 ordinary-renderer checks passing**. A user also observed blood remaining visible after a checkpoint reload, but this alone does not prove the bug is fixed.
+Original game assets are not provided. Upstream code and third-party components keep their own attribution and licensing requirements. This README doesn't magically relicense anybody else's work.
 
-During live rendering, normal depth testing sometimes rejected the decal while depth-disabled rendering showed positive coverage. Because the scene and camera were changing, that is **not proof that depth rejection was incorrect**.
-
-**Possible causes, not confirmed:** a depth or projection mismatch, timing of depth-buffer updates, another rendering pass overwriting or obscuring the decal, foreground/viewmodel layering, render-state/resource binding issues, or interactions with MSAA. None has been isolated as the cause.
-
-**Next targeted investigation:** Measure the *same synthetic decal* immediately after its normal draw and after final scene rendering **in one live frame**, with identical geometry, projection, and frame ID. Compare both depth coverage and actual color-buffer writes before changing the gameplay renderer.
-
-Blood effects can be disabled under **F11 → Gameplay → Blood & Gore** if they cause trouble.
-
-## Scope and disclosure
-
-Development and personal playtesting of this enhanced fork are focused on the **single-player campaign**. Multiplayer functionality is inherited from upstream and **has not been tested here**.
-
-This project was assisted with Codex and playtested by me. You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them.
-
-This repository does not contain the original game assets. Inherited code and third-party components retain their respective attribution and licensing requirements; no new blanket license is asserted here.
+If you're looking for some polished, bug-free miracle port, **this ain't it yet**. I'm tinkering with a game I wanted to play on PC, fixing things as I go, and documenting the bugs instead of hiding them.
