@@ -11,7 +11,7 @@ If you want the technical write-up, [here's the formal README](docs/README-FORMA
 
 ## Credit where it's due
 
-**[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) → [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) → [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
+**[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) â†’ [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) â†’ [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
 
 Frank started the recompilation project and PC renderer. hovg-N8 built a hell of a lot on top of it through 0.5.424. I didn't make their work and I'm not going to pretend I did.
 
@@ -26,12 +26,12 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 - **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES. Yes, basic buttons. They were busted.
 - Added **mouse and keyboard button icons/prompts** to the UI.
 - Added **native menu mouse support (preview)**: cursor-based hover and click detection instead of faking D-pad movement on mapped campaign menus. **Single Player hover, clicking, and empty-space rejection are playtested and confirmed.** Extended menu/dialog/options/pause coverage is still a work in progress.
-- Added **modern COD-style hitmarkers**, with sound and customization. F11 → Gameplay.
+- Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**, because throwing away the whole clip behavior every time wasn't what I wanted.
-- Added **experimental blood decals and adjustable blood clouds**. F11 → Gameplay → Blood & Gore. **CURRENTLY UNSTABLE.**
+- Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore. **CURRENTLY UNSTABLE.**
 - Added experimental blood-decal projection filtering and rendering diagnostics.
 
-## Known menu bugs � still need fixing
+## Known menu bugs — still need fixing
 
 The mouse finally points at actual menu entries, but the preview still has three reported bugs:
 
@@ -71,7 +71,7 @@ The latest comparison build passed **168 diagnostic checks**, the developer-mode
 
 I HAVE A PLAN B: ISOLATED TESTING AREA, GRAY WALLS AND A STATIONARY ENEMY. HAVEN'T TESTED BUT IT'S A HYPOTHESIS.
 
-For now, if the blood effects piss you off too, disable them in **F11 → Gameplay → Blood & Gore**.
+For now, if the blood effects piss you off too, disable them in **F11 â†’ Gameplay â†’ Blood & Gore**.
 
 ## Building this thing (Windows)
 
