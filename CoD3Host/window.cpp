@@ -15,6 +15,7 @@
 #include "settings.h"
 #include "render.h"
 #include "input.h"
+#include "native_menu_pointer.h"
 #include "button_prompts.h"
 #include "window_geometry.h"
 
@@ -136,6 +137,15 @@ namespace
             message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN || message == WM_XBUTTONDOWN || message == WM_MOUSEWHEEL)
             ButtonPrompts::KeyboardUsed();
         if (Overlay::HandleMessage(window, message, uint64_t(w), int64_t(l))) return 0;
+        if(message==WM_KILLFOCUS || message==WM_ENTERSIZEMOVE || message==WM_CANCELMODE)
+            NativeMenuPointer::Cancel();
+        if(NativeMenuPointer::Active() && (message==WM_LBUTTONDOWN || message==WM_LBUTTONUP ||
+            message==WM_RBUTTONDOWN || message==WM_RBUTTONUP)) {
+            NativeMenuPointer::Button(message==WM_RBUTTONDOWN || message==WM_RBUTTONUP,
+                message==WM_LBUTTONDOWN || message==WM_RBUTTONDOWN,
+                int(short(LOWORD(l))),int(short(HIWORD(l))));
+            return 0;
+        }
         // Windows asks the window what the pointer should look like whenever it
         // moves over it, and answering with nothing is how a pointer is hidden
         // over one window without touching it anywhere else.

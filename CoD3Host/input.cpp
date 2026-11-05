@@ -1,5 +1,6 @@
 #include "input.h"
 #include "menu_input.h"
+#include "native_menu_pointer.h"
 #include "keyboard_actions.h"
 #include "button_prompts.h"
 #include "sprint_input.h"
@@ -498,7 +499,7 @@ namespace
                 press.begun = true;
 #ifndef COD3_MP
                 if(press.keyboardSpace) {
-                    press.buttons=MenuInput::Apply(0,!g_mainMenuSeen.load(),Kernel::Stats().filesOpened.load()>=40,true,false);
+                    press.buttons=MenuInput::Apply(0,!g_mainMenuSeen.load(),NativeMenuPointer::InMission(),true,false);
                     printf("input: replayed Space -> 0x%04X (main menu seen %d)\n",press.buttons,int(g_mainMenuSeen.load()));fflush(stdout);
                 }
 #endif
@@ -578,16 +579,22 @@ namespace
 
         // Taking and giving back the pointer.
         //
-        // In a level the window takes the mouse by itself, the moment it is in
-        // front, and a click in it takes the mouse back after Escape: looking
-        // around is what a mouse is for in a shooter, and asking for a key
-        // first was asking every player to read the console. In the menus the
-        // left button used to take it, which made the mouse useless for the
-        // one thing a menu wants it for: clicking; F1 and the middle button
-        // take it there. Escape always gives it back, and in a level it is
-        // also Start, so the pause menu opens with the pointer free to leave.
+        // Campaign capture follows native connection/player and menu state.
+        // Escape releases capture and requests pause. Returning from a menu
+        // recaptures for gameplay; UI and loading screens keep a free cursor.
+        // Multiplayer retains its existing capture behavior.
+#ifdef COD3_MP
         const bool inLevel = Kernel::Stats().filesOpened.load(std::memory_order_relaxed) >= 40;
+        const bool menuVisible=false;
+#else
+        const bool inLevel=NativeMenuPointer::InMission();
+        const bool menuVisible=NativeMenuPointer::MenuVisible();
+        if((menuVisible || !inLevel) && g_mouseHeld.load()) SetHold(false);
+#endif
         const bool escapeDown = Down(VK_ESCAPE);
+        static bool escapeWasDown=false;
+        const bool escapePressed=escapeDown&&!escapeWasDown;
+        escapeWasDown=escapeDown;
         // Start is held for a few reads after Escape frees the pointer, so
         // the title's own poll, which is slower than these reads, sees it.
         static int startReadsLeft = 0;
@@ -595,13 +602,20 @@ namespace
         else if (!g_mouseHeld.load())
         {
             static bool takenForLevel = false;
-            if (!inLevel) takenForLevel = false;
+            if (!inLevel || menuVisible) takenForLevel = false;
             const bool firstTime = inLevel && !takenForLevel;
             POINT pointer{}; RECT client{};
             const HWND captureWindow=static_cast<HWND>(Window::Handle());
             const bool inClient=captureWindow && GetCursorPos(&pointer) &&
                 ScreenToClient(captureWindow,&pointer) && GetClientRect(captureWindow,&client) && PtInRect(&client,pointer);
-            if (Down(VK_F1) || (inClient && Down(VK_MBUTTON)) || firstTime || (inLevel && inClient && Down(VK_LBUTTON) && !escapeDown))
+            const bool captureRequest=Down(VK_F1) || (inClient && Down(VK_MBUTTON)) ||
+                (firstTime && !escapeDown) || (inLevel && inClient && Down(VK_LBUTTON) && !escapeDown);
+#ifdef COD3_MP
+            const bool captureAllowed=true;
+#else
+            const bool captureAllowed=inLevel&&!menuVisible;
+#endif
+            if(captureAllowed&&captureRequest)
             {
                 SetHold(true);
                 if (inLevel) takenForLevel = true;
@@ -681,20 +695,17 @@ namespace
         if (!held && Down(VK_ESCAPE) && !inLevel) pad.buttons |= PadBack;
 #else
         // Front-end cancel is controller B; Back is the objectives button.
-        if (!held && Down(VK_ESCAPE) && !inLevel) pad.buttons |= PadB;
+        static int backReadsLeft=0;
+        if(menuVisible && inLevel && escapePressed) backReadsLeft=10;
+        if (!held && ((!inLevel && escapeDown) || backReadsLeft>0)) pad.buttons |= PadB;
+        if(backReadsLeft>0) --backReadsLeft;
 #endif
         if (inLevel && startReadsLeft > 0) { pad.buttons |= PadStart; startReadsLeft--; }
 
-        // Driving a menu with the mouse.
-        //
-        // The menus are built for a pad: a highlight that moves up and down and
-        // a button that takes it. There is no way to ask the title what is
-        // under the pointer, so pointing at an entry cannot select it. What can
-        // be done is to make the mouse do what the pad does. Moving it up or
-        // down steps the highlight, one step per movement rather than one per
-        // pixel, and the left button takes the entry. It is not pointing and
-        // clicking, but it is a menu driven with the mouse.
-        if (!held && !inLevel)
+        // The supported Single Player page consumes pointer events directly
+        // in native_menu_pointer.cpp. Other frontend pages retain their old
+        // directional mouse controls until their widgets are mapped.
+        if (!held && !inLevel && !NativeMenuPointer::Active())
         {
             if (Down(VK_LBUTTON)) pad.buttons |= PadA;
             if (Down(VK_RBUTTON)) pad.buttons |= PadBack;
@@ -983,7 +994,7 @@ bool Input::MouseHeld()
 void Input::SuspendMouseCapture(bool suspended)
 {
     g_captureSuspended.store(suspended);
-    if (suspended) SetHold(false);
+    if (suspended) { SetHold(false);NativeMenuPointer::Cancel(); }
 }
 
 uint32_t Input::PacketNumber()

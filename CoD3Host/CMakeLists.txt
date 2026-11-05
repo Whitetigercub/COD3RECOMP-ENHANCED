@@ -60,6 +60,7 @@ set(COD3_HOST_SOURCES
     "scheduler.cpp"
     "window.cpp"
     "input.cpp"
+    "native_menu_pointer.cpp"
     "button_prompts.cpp"
     "hitmarkers.cpp"
     "blood.cpp"
