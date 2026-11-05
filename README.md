@@ -63,7 +63,7 @@ Then run the built `CoD3.exe` from its output directory. On first launch, setup 
 
 These commands come from the existing upstream build script and README. I haven't freshly verified a clean build on every machine, so I'm not going to bullshit you about that. More details are in the [archived build instructions](docs/UPSTREAM-README.md#build) and [STATUS.md](STATUS.md).
 
-## AI disclosure, because I won't pretend otherwise
+## AI disclosure, just being clear
 
 **This project was assisted with Codex and playtested by me.** You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them. Also this README was also written by Codex, haha. But this wasn't. Neither this. I'm not lying. I'm just wasting your time.
 
