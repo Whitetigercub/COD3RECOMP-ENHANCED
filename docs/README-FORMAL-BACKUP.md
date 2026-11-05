@@ -59,7 +59,20 @@ During live rendering, normal depth testing sometimes rejected the decal while d
 
 **Possible causes, not confirmed:** a depth or projection mismatch, timing of depth-buffer updates, another rendering pass overwriting or obscuring the decal, foreground/viewmodel layering, render-state/resource binding issues, or interactions with MSAA. None has been isolated as the cause.
 
-**Next targeted investigation:** Measure the *same synthetic decal* immediately after its normal draw and after final scene rendering **in one live frame**, with identical geometry, projection, and frame ID. Compare both depth coverage and actual color-buffer writes before changing the gameplay renderer.
+### Follow-up: same-frame live comparison (November 2026)
+
+The planned comparison was implemented and run, incorporating an independent review of resolve/presentation behavior, draw submission counts, and measurement limitations.
+
+- **24 paired frames captured.** The fixture geometry/projection hashes matched within each pair and all measured draw calls succeeded; **7 frames contained two blood insertions**.
+- **Five consecutive live frames** showed **317 normal-depth and 317 depth-disabled samples** at both early and late checks, with **102 RGB pixel changes per frame**.
+- Other frames showed **zero normal-depth coverage despite positive depth-disabled coverage at the initial draw**. This establishes rejection by the sampled depth state, but **not incorrect occlusion**. Foreground overlap and Mission Failed frames limit conclusions about ordinary gameplay.
+- Resolve/clear tracking confirmed that presentation can use a **separate resolved texture**. The captured changed pixels fell inside the copied image region; their later values matched the selected presentation texture. **No downstream blood-erasing pass was demonstrated.**
+- The new build passed **168 focused diagnostic checks, the developer-mode opt-out check, and 27 ordinary-renderer checks**.
+- Normal blood draw order and projection selection were not changed. The installed executable and user settings were untouched. The new comparison source and patch are preserved locally/archived, **not yet committed or pushed**.
+
+**Conclusion:** The original intermittent gameplay blood disappearance remains unresolved. These samples validate successful live writes under some conditions and initial depth rejection under others. Neither a faulty depth test nor a downstream erasure was established.
+
+**Next reproducibility target:** Capture a genuine gameplay-generated stain on an unobstructed surface while Permanent decals and a 4,096-decal pool are enabled. Record its appearance and any later disappearance with before/after screenshots and corresponding logs, avoiding scene transitions and intentional occlusion. Only consider a rendering fix after a controlled failure is documented.
 
 Blood effects can be disabled under **F11 → Gameplay → Blood & Gore** if they cause trouble.
 
