@@ -25,10 +25,23 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 - **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES. Yes, basic buttons. They were busted.
 - Added **mouse and keyboard button icons/prompts** to the UI.
+- Added **native menu mouse support (preview)**: cursor-based hover and click detection instead of faking D-pad movement on mapped campaign menus. **Single Player hover, clicking, and empty-space rejection are playtested and confirmed.** Extended menu/dialog/options/pause coverage is still a work in progress.
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 → Gameplay.
 - Added **M1 Garand partial reload**, because throwing away the whole clip behavior every time wasn't what I wanted.
 - Added **experimental blood decals and adjustable blood clouds**. F11 → Gameplay → Blood & Gore. **CURRENTLY UNSTABLE.**
 - Added experimental blood-decal projection filtering and rendering diagnostics.
+
+## Known menu bugs � still need fixing
+
+The mouse finally points at actual menu entries, but the preview still has three reported bugs:
+
+- The game's own **brightness slider does not respond** to the mouse.
+- **Sensitivity sliders can keep changing after one click.**
+- Go from the title screen into the menus, then back to **PRESS ENTER**, and **Enter stops working**.
+
+These are documented, **not fixed**. The confirmed Single Player build and the expanded playtest executable are preserved locally. Later help-caption/button-capture refinements in this source have not been live playtested. Campaign build and focused simulated-input checks passed, but the tests missed the native slider-repeat behavior; they aren't proof that the bugs above are solved. Full gameplay cursor-capture transitions and multiplayer remain unverified.
+
+See the [menu preview status](docs/MENU-POINTER-PREVIEW.md) and [bug log with reproduction/source leads](docs/MENU-SLIDER-BUGS.md). The slider fixes are deferred for a small follow-up patch.
 
 ## THE KNOWN BUG: BLOOD DECALS KEEP FUCKING DISAPPEARING
 

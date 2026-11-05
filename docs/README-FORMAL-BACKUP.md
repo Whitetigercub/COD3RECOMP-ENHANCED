@@ -20,12 +20,25 @@ The upstream 0.5.424 README describes a playable campaign, multiplayer over Syst
 
 - Fixed three broken actions: **Reload, Binoculars, and Objectives**.
 - Added mouse-and-keyboard button prompts in the interface.
+- Added preview native pointer interaction for mapped campaign menus, using native widget geometry and selection/activation callbacks. Single Player hover, activation, and rejection of blank-space clicks are user-confirmed. Extended menu, dialog, options, slider, and pause coverage remains under validation.
 - Added modern-style hitmarkers with optional sound and settings in **F11 → Gameplay**.
 - Added an **M1 Garand partial reload**.
 - Added **experimental blood decals and adjustable blood clouds**, configurable in **F11 → Gameplay → Blood & Gore**. This feature is currently unstable.
 - Added experimental blood-decal projection filtering and rendering diagnostics.
 
 These are the enhanced fork's changes; the much larger upstream feature set above was not authored here. This fork has not been given a separate numbered release version.
+
+## Menu pointer preview: validation and known issues
+
+The campaign executable builds with locally available generated game sources and level libraries. Focused checks cover coordinate mapping and the actual host pointer module using simulated guest memory/callbacks; multiplayer source generation also passes. A full multiplayer build and gameplay capture-transition playtest have not been performed. The user reported that expanded menus work, without specifying coverage for each screen. Later help-caption and Win32 button-capture refinements in the source have not been live tested. The original installation and settings were not replaced.
+
+Three reported issues remain unresolved:
+
+1. The native brightness/calibration slider does not respond to pointer input.
+2. Control sensitivity sliders may continue increasing or decreasing after a single click. The simulated callbacks did not model native directional auto-repeat, so the passing checks did not exclude this bug.
+3. Enter ceases to advance the title screen after entering the menus and returning to the title screen.
+
+The original confirmed Single Player checkpoint and expanded playtest executable are preserved locally. Slider fixes are deferred to a focused follow-up. See [preview status](MENU-POINTER-PREVIEW.md) and the [menu input bug log](MENU-SLIDER-BUGS.md) for scope, reproduction details and source-level leads. No fix for these issues is claimed.
 
 ## Quick start / build from source (Windows)
 
