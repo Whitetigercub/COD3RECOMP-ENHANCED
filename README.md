@@ -11,7 +11,7 @@ If you want the technical write-up, [here's the formal README](docs/README-FORMA
 
 ## Credit where it's due
 
-**[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) â†’ [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) â†’ [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
+**[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) - [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) - [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
 
 Frank started the recompilation project and PC renderer. hovg-N8 built a hell of a lot on top of it through 0.5.424. I didn't make their work and I'm not going to pretend I did.
 
