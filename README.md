@@ -21,7 +21,7 @@ And to be clear, **I HAVE NOT TESTED MULTIPLAYER.** hovg-N8's fork has multiplay
 
 I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md), and their big development history is in [docs/PATCH-NOTES.md](docs/PATCH-NOTES.md). No one's credits got thrown in the trash.
 
-## What I actually changed
+## MAIN CHANGES
 
 - **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES. Yes, basic buttons. They were busted.
 - Added **mouse and keyboard button icons/prompts** to the UI.
