@@ -7,7 +7,7 @@ This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. I mainly 
 
 The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. Legal shit, I know.
 
-If you want the less sweary write-up, [here's the formal README](docs/README-FORMAL-BACKUP.md). Same project, fewer F-bombs.
+If you want the technical write-up, [here's the formal README](docs/README-FORMAL-BACKUP.md).
 
 ## Credit where it's due
 
