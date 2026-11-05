@@ -203,6 +203,41 @@ int main(int argc, char **) {
   CHECK(frame.resource);
   CHECK(parity());
   CHECK(BloodTest::Get().liveNormal > 0);
+  // Same-frame replay uses private native-format/MSAA copies, the existing
+  // shader/depth state, and does not count its draws as gameplay submissions.
+  D3D11_VIEWPORT replayViewport{0, 0, 128, 96, 0, 1};
+  auto submissions = BloodTest::Get().draws;
+  auto sourcePixel = [&]() {
+    D3D11_TEXTURE2D_DESC desc{};color->GetDesc(&desc);
+    desc.SampleDesc = {1, 0};desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    ComPtr<ID3D11Texture2D> copy;ComPtr<ID3D11ShaderResourceView> view;
+    if (FAILED(device->CreateTexture2D(&desc, nullptr, &copy))) return 0u;
+    context->ResolveSubresource(copy.Get(), 0, color.Get(), 0, desc.Format);
+    if (FAILED(device->CreateShaderResourceView(copy.Get(), nullptr, &view))) return 0u;
+    BloodTestGpu::Frame f;f.resource=view.Get();return pixel(f);
+  };
+  auto nativeBefore = sourcePixel();
+  auto early = BloodTestGpu::Compare(device.Get(), context.Get(), rtv.Get(),
+      dsv.Get(), p, a.data(), 36, replayViewport);
+  CHECK(early.drawn && early.queriesReady);
+  CHECK(early.normalSamples > 0 && early.normalSamples == early.noDepthSamples);
+  CHECK((pixel(early.normal) & 0xffffff) != 0);
+  CHECK(sourcePixel() == nativeBefore);
+  CHECK(BloodTest::Get().draws == submissions);
+  auto normalSamples = early.normalSamples;
+  auto unchanged = BloodTestGpu::Compare(device.Get(), context.Get(), rtv.Get(),
+      dsv.Get(), p, a.data(), 36, replayViewport);
+  CHECK(unchanged.normalSamples == normalSamples);
+  clear(.75f);
+  nativeBefore = sourcePixel();
+  auto late = BloodTestGpu::Compare(device.Get(), context.Get(), rtv.Get(),
+      dsv.Get(), p, a.data(), 36, replayViewport);
+  CHECK(late.drawn && late.queriesReady);
+  CHECK(late.normalSamples == 0 && late.noDepthSamples > 0);
+  CHECK((pixel(late.normal) & 0xffffff) == 0);
+  CHECK((pixel(late.noDepth) & 0xffffff) != 0);
+  CHECK(sourcePixel() == nativeBefore);
+  CHECK(BloodTest::Get().draws == submissions);
   BloodTest::MapChanged();
   CHECK(BloodTest::Get().anchor);
   CHECK(pixel(BloodTestGpu::FrozenFrame(device.Get(), context.Get())) ==

@@ -52,7 +52,7 @@ bool Initialize(ID3D11Device* device){
  vs=newVs;return true;
 }
 }
-bool BloodRender::Draw(ID3D11Device* device,ID3D11DeviceContext* context,const Projection& projection,const Blood::WorldVertex* fixture,int fixtureCount,bool disableDepth,bool colorWrites){
+bool BloodRender::Draw(ID3D11Device* device,ID3D11DeviceContext* context,const Projection& projection,const Blood::WorldVertex* fixture,int fixtureCount,bool disableDepth,bool colorWrites,bool reportFixture){
  static thread_local std::array<Blood::WorldVertex,Capacity> data;
  int count=fixture?std::clamp(fixtureCount,0,Capacity):Blood::BuildWorld(data.data(),Capacity);if(!count||!Initialize(device))return false;
  if(fixture)memcpy(data.data(),fixture,count*sizeof(data[0]));
@@ -125,7 +125,7 @@ if(BloodDiag::On()){
 }
 
 
- if(fixture&&colorWrites&&BloodTest::Available()){
+ if(fixture&&colorWrites&&reportFixture&&BloodTest::Available()){
   static ComPtr<ID3D11Query> tests[2];static bool pending=false;static uint64_t generation=0,last=0;
   if(pending){UINT64 a=0,b=0;if(context->GetData(tests[0].Get(),&a,8,D3D11_ASYNC_GETDATA_DONOTFLUSH)==S_OK&&context->GetData(tests[1].Get(),&b,8,D3D11_ASYNC_GETDATA_DONOTFLUSH)==S_OK){BloodTest::Samples(generation,a,b);pending=false;}}
   auto now=GetTickCount64();if(!pending&&now-last>=250){last=now;auto state=BloodTest::Get();generation=state.generation;

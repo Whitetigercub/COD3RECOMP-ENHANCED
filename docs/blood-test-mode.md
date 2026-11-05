@@ -79,3 +79,52 @@ try {
 ```
 
 The regression stubs native collision and uses WARP; native checkpoint validation is separate. No disc data, generated game code, binaries, user saves or captured assets are required by this test source.
+
+## Opt-in same-frame live comparison
+
+Set `COD3_BLOOD_LIVE_COMPARE=1` and `COD3_BLOOD_CAPTURE_DIR` to a new evidence
+directory, alongside the usual developer-mode opt-in. Leave the legacy
+`COD3_BLOOD_DIAG_TEST` and `COD3_BLOOD_CONTROLLED` flags unset. This experiment
+does not require `COD3_BLOOD_DIAG`. Load a checkpoint, turn **Frozen level
+snapshot** off in F11, close F11, and press F7. Normal depth testing should stay
+enabled for the actual displayed fixture draw.
+
+The existing before/after/source-at-presentation/final-backbuffer capture
+machinery is reused for the synthetic fixture. Up to 24 frames are sampled,
+at least two seconds apart. Each sample retains the vertex bytes, full
+projection, viewport, fixture generation and native target/depth views. At
+the original insertion and the synchronized real `Render::Swap` boundary,
+the same shader draws against private color/depth copies with normal and
+disabled depth testing. The late draws are never presented. Idle presentation
+does not complete a pending sample. Draws used for comparison do not enter
+the fixture's gameplay submission/HUD counters.
+
+`BLC` records distinguish actual draw success, normal insertion count,
+frame-tagged GPU sample counts, geometry/projection hashes, RGB writes, and
+source-target pixel changes. Relevant native resolve/copy/clear commands are
+recorded (up to 16 events per sampled frame), with a bounded direct-resolve
+resource lineage. The selected front-buffer resource is identified separately
+and captured as `presentation_input`. `source_before_resolve` retains the last
+captured original source before its tracked resolve. Other images include
+`late_normal` and `late_no_depth` private replay outputs.
+
+These are resolved **8-bit RGB** comparisons; quantization and native
+compositing can change the interpretation of zero/modified pixels. The late
+replay measures source drawability, not a blood-free final-image
+counterfactual. Direct-resolve lineage does not follow arbitrary shader texture
+sampling. Multiple normal insertions, changed generations, readback/query
+failures, loading screens and Mission Failed must be treated separately.
+Neither a changed source pixel nor a later passing depth test proves that a
+decal disappeared from the displayed image.
+
+The 2026-11-05 run produced 24 paired native samples. Every pair retained
+matching geometry/projection hashes and succeeded. Two samples belonged to
+the loading/setup generation. Five consecutive gameplay samples had 317/317
+early and late coverage with 102 actual RGB writes each. Other samples showed
+initial depth rejection, and the run later reached Mission Failed. All
+positive initial changed masks were within the tracked 1200×720 resolve
+rectangle; their later source values matched the selected presentation input.
+No incorrect downstream erasure or original intermittent root cause was
+established. Projection selection and normal insertion order were unchanged.
+The expanded fixture regression passed 168 checks plus opt-out; the existing
+normal-blood GPU regression passed 27 checks.

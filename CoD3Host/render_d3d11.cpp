@@ -34,6 +34,7 @@
 #include "render_queue.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <climits>
 #include <chrono>
@@ -667,33 +668,124 @@ namespace
         std::vector<uint8_t> before,after;
         uint32_t w=0,h=0;uint64_t frame=0,at=0;int captures=0;
         bool pending=false;
+        bool fixture=false, swapReady=false;
+        ComPtr<ID3D11RenderTargetView> rtv;
+        ComPtr<ID3D11DepthStencilView> dsv;
+        BloodRender::Projection projection{};
+        D3D11_VIEWPORT viewport{};
+        std::array<Blood::WorldVertex,36> vertices{};
+        uint64_t generation=0, vertexHash=0, projectionHash=0;
+        BloodTestGpu::Comparison early{};
+        std::vector<ComPtr<ID3D11Resource>> lineage;
+        unsigned events=0;
     } g_bloodPixels;
+    struct { uint64_t frame=~uint64_t(0); unsigned insertions=0, succeeded=0; } g_bloodLive;
+    bool BloodLiveEnabled(){return BloodTest::Active()&&getenv("COD3_BLOOD_LIVE_COMPARE")&&!BloodTest::Get().frozen;}
+    uint64_t BloodHash(const void* data,size_t size){uint64_t h=1469598103934665603ull;auto b=static_cast<const uint8_t*>(data);while(size--)h=(h^*b++)*1099511628211ull;return h;}
+    void BloodPixelLog(const char* format,...){
+        if(!g_bloodPixels.fixture&&!BloodDiag::On())return;
+        printf(g_bloodPixels.fixture?"BLC ":"BDIAG ");va_list args;va_start(args,format);vprintf(format,args);va_end(args);printf("\n");fflush(stdout);
+    }
     std::string BloodPixelPath(const char* stage){
         const char* dir=getenv("COD3_BLOOD_CAPTURE_DIR");if(!dir)return {};
         std::filesystem::create_directories(dir);char name[256];snprintf(name,sizeof(name),"/frame_%llu_%s.bmp",g_bloodPixels.frame,stage);return std::string(dir)+name;
     }
-    void BloodPixelsBefore(ID3D11Texture2D* scene,uint64_t frame){
-        auto& a=g_bloodPixels;if(!BloodDiag::On()||!getenv("COD3_BLOOD_CAPTURE_DIR")||a.pending||a.captures>=(getenv("COD3_BLOOD_CONTROLLED")?36:12)||GetTickCount64()-a.at<(getenv("COD3_BLOOD_CONTROLLED")?5000:2000)||Blood::Status().decals==0||(getenv("COD3_BLOOD_CONTROLLED")&&Blood::Status().particles>0))return;
-        a.at=GetTickCount64();a.scene=scene;a.frame=frame;a.before=ReadBack(scene,a.w,a.h,1);a.pending=!a.before.empty();
+    bool BloodPixelsBefore(ID3D11Texture2D* scene,uint64_t frame,bool fixture=false){
+        auto& a=g_bloodPixels;
+        if(!getenv("COD3_BLOOD_CAPTURE_DIR")||a.pending||a.captures>=(fixture?24:(getenv("COD3_BLOOD_CONTROLLED")?36:12))||GetTickCount64()-a.at<(getenv("COD3_BLOOD_CONTROLLED")?5000:2000))return false;
+        if(fixture?!BloodLiveEnabled():(!BloodDiag::On()||Blood::Status().decals==0||(getenv("COD3_BLOOD_CONTROLLED")&&Blood::Status().particles>0)))return false;
+        a.fixture=fixture;a.swapReady=false;a.at=GetTickCount64();a.scene=scene;a.frame=frame;a.before=ReadBack(scene,a.w,a.h,1);a.pending=!a.before.empty();a.after.clear();
+        if(!a.pending)BloodPixelLog("readback_unavailable frame=%llu stage=before",frame);
+        return a.pending;
     }
     void BloodPixelsAfter(){
         auto& a=g_bloodPixels;if(!a.pending)return;
         uint32_t w=0,h=0;a.after=ReadBack(a.scene.Get(),w,h,1);
         if(a.after.size()!=a.before.size()){a.pending=false;return;}
         size_t changed=0;for(size_t i=0;i<a.before.size();i+=4)if(memcmp(&a.before[i],&a.after[i],3))++changed;
-        BloodDiag::Log("pixel_write frame=%llu target=%p width=%u height=%u changed_rgb_pixels=%zu",a.frame,a.scene.Get(),a.w,a.h,changed);
+        BloodPixelLog("pixel_write frame=%llu target=%p width=%u height=%u changed_rgb_pixels=%zu precision=resolved_RGB8",a.frame,a.scene.Get(),a.w,a.h,changed);
         WriteBmp(BloodPixelPath("before_blood").c_str(),a.before,a.w,a.h);WriteBmp(BloodPixelPath("after_blood").c_str(),a.after,a.w,a.h);
     }
     void BloodPixelsFinal(){
-        auto& a=g_bloodPixels;if(!a.pending||a.after.empty())return;
+        auto& a=g_bloodPixels;if(!a.pending||a.after.empty()||(a.fixture&&!a.swapReady))return;
         uint32_t w=0,h=0;auto end=ReadBack(a.scene.Get(),w,h,1);size_t mask=0,sameAfter=0,backBefore=0,other=0;
         if(end.size()==a.after.size())for(size_t i=0;i<end.size();i+=4)if(memcmp(&a.before[i],&a.after[i],3)){
           ++mask;if(!memcmp(&end[i],&a.after[i],3))++sameAfter;else if(!memcmp(&end[i],&a.before[i],3))++backBefore;else ++other;
         }
-        BloodDiag::Log("pixel_survival frame=%llu source_scene=%p mask=%zu unchanged_after_blood=%zu restored_before_blood=%zu modified_downstream=%zu final_backbuffer=%p",a.frame,a.scene.Get(),mask,sameAfter,backBefore,other,g_backTexture.Get());
+        BloodPixelLog("pixel_survival frame=%llu source_scene=%p mask=%zu unchanged_after_blood=%zu restored_before_blood=%zu modified_downstream=%zu readback_valid=%d final_backbuffer=%p scope=source_only",a.frame,a.scene.Get(),mask,sameAfter,backBefore,other,end.size()==a.after.size(),g_backTexture.Get());
         if(!end.empty())WriteBmp(BloodPixelPath("scene_at_present").c_str(),end,w,h);
         auto final=ReadBack(g_backTexture.Get(),w,h,1);if(!final.empty())WriteBmp(BloodPixelPath("final_backbuffer").c_str(),final,w,h);
-        a.pending=false;a.scene.Reset();a.before.clear();a.after.clear();++a.captures;
+        a.pending=false;a.scene.Reset();a.rtv.Reset();a.dsv.Reset();a.lineage.clear();a.before.clear();a.after.clear();++a.captures;
+    }
+
+    bool BloodLiveBefore(ID3D11RenderTargetView* target,ID3D11DepthStencilView* depth,const BloodRender::Projection& p,const Blood::WorldVertex* vertices,int count,const D3D11_VIEWPORT& viewport){
+        if(!BloodLiveEnabled())return false;
+        if(g_bloodLive.frame!=p.diagFrame)g_bloodLive={p.diagFrame,0,0};
+        ++g_bloodLive.insertions;
+        auto& a=g_bloodPixels;
+        if(count!=36)return false;
+        ComPtr<ID3D11Resource> resource;ComPtr<ID3D11Texture2D> texture;
+        target->GetResource(&resource);resource.As(&texture);
+        if(!BloodPixelsBefore(texture.Get(),p.diagFrame,true))return false;
+        a.rtv=target;a.dsv=depth;a.projection=p;a.viewport=viewport;a.generation=BloodTest::Get().generation;
+        memcpy(a.vertices.data(),vertices,sizeof(a.vertices));a.vertexHash=BloodHash(vertices,sizeof(a.vertices));a.projectionHash=BloodHash(&p,sizeof(p));a.events=0;a.lineage.clear();a.lineage.push_back(resource);
+        a.early=BloodTestGpu::Compare(g_device.Get(),g_context.Get(),target,depth,p,vertices,count,viewport);
+        BloodPixelLog("begin frame=%llu generation=%llu insertion=%u source=%p depth=%p vertices_hash=%016llX projection_hash=%016llX source_vs=%016llX near=%.6f far=%.3f early_draw=%d queries_ready=%d normal=%llu no_depth=%llu",p.diagFrame,a.generation,g_bloodLive.insertions,texture.Get(),depth,a.vertexHash,a.projectionHash,p.diagShader,p.diagNear,p.diagFar,a.early.drawn,a.early.queriesReady,a.early.normalSamples,a.early.noDepthSamples);
+        g_context->OMSetRenderTargets(1,&target,depth);g_context->RSSetViewports(1,&viewport);
+        return true;
+    }
+    bool BloodLiveTracked(ID3D11Resource* resource){for(auto& r:g_bloodPixels.lineage)if(r.Get()==resource)return true;return false;}
+    void BloodLiveResolve(const RenderState::ResolveCommand& command){
+        auto& a=g_bloodPixels;if(!a.pending||!a.fixture||a.swapReady)return;
+        ComPtr<ID3D11Resource> source,destination,clear,depth;
+        if(command.source)command.source->GetResource(&source);
+        if(command.destination)command.destination->GetResource(&destination);
+        if(command.clearTarget)command.clearTarget->GetResource(&clear);
+        if(command.clearDepth)command.clearDepth->GetResource(&depth);
+        ComPtr<ID3D11Resource> trackedDepth;a.dsv->GetResource(&trackedDepth);
+        bool copied=command.copy&&BloodLiveTracked(source.Get());
+        bool colorCleared=command.colorClear&&BloodLiveTracked(clear.Get());
+        bool depthCleared=command.depthClear&&depth==trackedDepth;
+        if(copied&&destination&&a.lineage.size()<32&&!BloodLiveTracked(destination.Get()))a.lineage.push_back(destination);
+        if((copied||colorCleared||depthCleared)&&a.events++<16){
+            BloodPixelLog("resolve frame=%llu event=%u copy=%d source=%p destination=%p rect=%.1f,%.1f,%u,%u color_clear=%d clear_resource=%p depth_clear=%d depth_resource=%p",a.frame,a.events,copied,source.Get(),destination.Get(),command.x0,command.y0,command.width,command.height,colorCleared,clear.Get(),depthCleared,depth.Get());
+            // The native resolve may preserve the image before clearing the
+            // source. Capture this pre-clear source with the existing reader.
+            if(copied&&source.Get()==a.scene.Get()){
+                uint32_t w=0,h=0;auto pixels=ReadBack(a.scene.Get(),w,h,1);
+                if(!pixels.empty())WriteBmp(BloodPixelPath("source_before_resolve").c_str(),pixels,w,h);
+            }
+        }
+    }
+    void BloodLiveSwap(uint64_t frame){
+        auto& a=g_bloodPixels;
+        if(!a.pending||!a.fixture){
+            if(BloodLiveEnabled()&&BloodTest::Get().generated&&GetTickCount64()-a.at>=2000&&a.captures<24){
+                a.at=GetTickCount64();printf("BLC no_capture frame=%llu insertions=%u succeeded=%u reason=no_successful_capture\n",frame,g_bloodLive.frame==frame?g_bloodLive.insertions:0,g_bloodLive.frame==frame?g_bloodLive.succeeded:0);fflush(stdout);
+            }
+            return;
+        }
+        if(a.frame!=frame){BloodPixelLog("discard frame=%llu swap_frame=%llu reason=frame_mismatch",a.frame,frame);a.pending=false;return;}
+        a.swapReady=true;
+        auto late=BloodTestGpu::Compare(g_device.Get(),g_context.Get(),a.rtv.Get(),a.dsv.Get(),a.projection,a.vertices.data(),36,a.viewport);
+        BloodPixelLog("late frame=%llu boundary=synchronized_swap generation=%llu generation_matches=%d insertions=%u succeeded=%u vertices_hash=%016llX projection_hash=%016llX replay_draw=%d queries_ready=%d normal=%llu no_depth=%llu scope=source_drawability_only",frame,a.generation,BloodTest::Get().generation==a.generation,g_bloodLive.insertions,g_bloodLive.succeeded,BloodHash(a.vertices.data(),sizeof(a.vertices)),BloodHash(&a.projection,sizeof(a.projection)),late.drawn,late.queriesReady,late.normalSamples,late.noDepthSamples);
+        for(int i=0;i<2;i++){
+            auto view=i?late.noDepth.resource:late.normal.resource;if(!view)continue;
+            ComPtr<ID3D11Resource> resource;ComPtr<ID3D11Texture2D> texture;view->GetResource(&resource);resource.As(&texture);
+            uint32_t w=0,h=0;auto pixels=ReadBack(texture.Get(),w,h,1);size_t changed=0;
+            uint32_t bw=0,bh=0;auto before=ReadBack(a.scene.Get(),bw,bh,1);
+            bool valid=!pixels.empty()&&pixels.size()==before.size();
+            if(valid)for(size_t k=0;k<pixels.size();k+=4)changed+=memcmp(&pixels[k],&before[k],3)!=0;
+            BloodPixelLog("late_pixel_write frame=%llu depth=%s changed_rgb_pixels=%zu readback_valid=%d precision=resolved_RGB8",frame,i?"disabled":"normal",changed,valid);
+            if(!pixels.empty())WriteBmp(BloodPixelPath(i?"late_no_depth":"late_normal").c_str(),pixels,w,h);
+        }
+        ID3D11RenderTargetView* none=nullptr;g_context->OMSetRenderTargets(1,&none,nullptr);ForgetBindings();
+    }
+    void BloodLivePresentInput(ID3D11ShaderResourceView* view){
+        auto& a=g_bloodPixels;if(!a.pending||!a.fixture||!a.swapReady)return;
+        ComPtr<ID3D11Resource> resource;ComPtr<ID3D11Texture2D> texture;if(view){view->GetResource(&resource);resource.As(&texture);}
+        BloodPixelLog("presentation_input frame=%llu front_buffer=%08X resource=%p resolved_lineage=%d same_as_source=%d scope=resolve_provenance_not_pixel_counterfactual",a.frame,g_frontBuffer,resource.Get(),BloodLiveTracked(resource.Get()),resource.Get()==a.scene.Get());
+        if(texture){uint32_t w=0,h=0;auto pixels=ReadBack(texture.Get(),w,h,1);if(!pixels.empty())WriteBmp(BloodPixelPath("presentation_input").c_str(),pixels,w,h);}
     }
 
     // The depth alongside, as grey on a log scale, when COD3_D3DDRAWDUMPZ is set.
@@ -987,7 +1079,14 @@ namespace
             if(BloodDiag::On()){static uint64_t last=0;auto now=GetTickCount64();if(now-last>=1000){last=now;BloodDiag::Log("selected frame=%llu source_vs=%016llX source_pass=%s source_depth=%08X source_mask=%08X near=%.6f far=%.6f target=%p depth_target=%p trigger_is_world=%d",bloodProjection.diagFrame,bloodProjection.diagShader,bloodProjection.diagPass?"depth_only":"opaque_color_depth_write",bloodProjection.diagDepth,bloodProjection.diagMask,bloodProjection.diagNear,bloodProjection.diagFar,bloodTarget,bloodDepth,command.bloodWorldStage);for(int row=0;row<4;row++)BloodDiag::Log("selected_matrix frame=%llu row=%d values=%.9g,%.9g,%.9g,%.9g",bloodProjection.diagFrame,row,bloodProjection.matrix[row*4],bloodProjection.matrix[row*4+1],bloodProjection.matrix[row*4+2],bloodProjection.matrix[row*4+3]);}}
             if(BloodTest::Active()){
                 BloodTestGpu::Observe(g_device.Get(),g_context.Get(),bloodTarget,bloodDepth,bloodProjection,command.targetWidth,command.targetHeight);
-                if(!BloodTest::Get().frozen){Blood::WorldVertex fixture[36];int count=BloodTest::Build(fixture,36);if(count)BloodRender::Draw(g_device.Get(),g_context.Get(),bloodProjection,fixture,count,BloodTest::Get().depthOff);else BloodTest::Submitted(bloodProjection.diagFrame,0,false);}
+                if(!BloodTest::Get().frozen){
+                    Blood::WorldVertex fixture[36];int count=BloodTest::Build(fixture,36);
+                    bool captured=BloodLiveBefore(bloodTarget,bloodDepth,bloodProjection,fixture,count,viewport);
+                    if(count){bool drawn=BloodRender::Draw(g_device.Get(),g_context.Get(),bloodProjection,fixture,count,BloodTest::Get().depthOff);
+                        if(BloodLiveEnabled()&&drawn)++g_bloodLive.succeeded;
+                        if(captured){BloodPixelLog("actual_draw frame=%llu insertion=%u succeeded=%d depth_disabled=%d",bloodProjection.diagFrame,g_bloodLive.insertions,drawn,BloodTest::Get().depthOff);BloodPixelsAfter();}
+                    }else BloodTest::Submitted(bloodProjection.diagFrame,0,false);
+                }
             }else{
                 BloodPixelsBefore(command.colorTexture,bloodProjection.diagFrame);
                 BloodRender::Draw(g_device.Get(),g_context.Get(),bloodProjection);
@@ -1706,6 +1805,7 @@ namespace
 
     void ExecuteResolve(const RenderState::ResolveCommand& command)
     {
+        BloodLiveResolve(command);
         // COD3_GPU_DRAWS: a resolve timed in parts, so the report says which
         // resolves the time goes to. A stamp first, with nothing issued since
         // the last one: what it measures is the GPU idle before the resolve,
@@ -2305,6 +2405,7 @@ namespace
         QueryDisplay();
 
         const RenderResources::Resolved* frame = RenderResources::ResolvedAt(g_frontBuffer);
+        BloodLivePresentInput(frame?frame->resource:nullptr);
         const bool fxaa = (AntiAliasing(settings) == 1 || AntiAliasing(settings) == 5) && g_fxaaPixelShader;
         if (frame != nullptr && frame->resource != nullptr)
         {
@@ -3023,6 +3124,7 @@ void Render::Swap(uint32_t frontBufferPhysical, uint32_t width, uint32_t height)
     // The frame's end: onto the window, the counters closed, the next
     // frame's settings taken.
     const Settings::Values settings = Settings::Get();
+    BloodLiveSwap(g_swaps.load(std::memory_order_relaxed));
     PresentLocked(settings);
     RenderStats::EndFrame();
     // Verify mode (verify.h): what each check has looked at, every ten
