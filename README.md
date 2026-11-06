@@ -104,7 +104,7 @@ These commands come from the existing upstream build script and README. I haven'
 
 **This project was assisted with Codex and playtested by me.** You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them. Also this README was also written by Codex, haha. But this wasn't. Neither this. I'm not lying. I'm just wasting your time.
 
-I still decide what goes into my fork, and I actually play the dang game.
+I still decide what goes into my fork, and I actually play the damn game.
 
 Original game assets are not provided. Upstream code and third-party components keep their own attribution and licensing requirements. This README doesn't magically relicense anybody else's work.
 
