@@ -1,11 +1,11 @@
 # <img src="cod3recomplogo3.png" alt="COD3RECOMP-ENHANCED logo" width="600">
 
 
-**Call of Duty 3 (Xbox 360) on PC, with the fixes and improvements I wanted to see.**
+**Call of Duty 3 (Xbox 360) on PC, with the fixes and improvements I want.**
 
 This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. My main focus is the **single-player campaign**: fixing annoyances and adding a few modern touches.
 
-The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. You'll need to supply the game files yourself.
+The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. Legal shit, I know.
 
 If you want the technical write-up, [here's the formal README](docs/README-FORMAL-BACKUP.md).
 
