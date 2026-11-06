@@ -99,11 +99,11 @@ Then run the built `CoD3.exe` from its output directory. On first launch, setup 
 
 These commands come from the existing upstream build script and README. I haven't freshly verified a clean build on every machine, so I won't claim that every setup is verified. More details are in the [archived build instructions](docs/UPSTREAM-README.md#build) and [STATUS.md](STATUS.md).
 
-## AI assistance
+## AI disclosure, just being clear
 
-**This project was assisted with Codex and playtested by me.** I want to be transparent about the tools I use. This README has also been edited with AI assistance.
+**This project was assisted with Codex and playtested by me.** You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them. Also this README was also written by Codex, haha. But this wasn't. Neither this. I'm not lying. I'm just wasting your time.
 
-I still decide what goes into my fork, and I playtest the changes myself.
+I still decide what goes into my fork, and I actually play the dang game.
 
 Original game assets are not provided. Upstream code and third-party components keep their own attribution and licensing requirements. This README doesn't magically relicense anybody else's work.
 
