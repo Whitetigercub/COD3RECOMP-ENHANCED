@@ -88,7 +88,11 @@ Keep the decal pool at **4,096** for comparable runs where the setting is availa
 
 For every run, record the map, Permanent setting, whether a real player hit created custom decals, whether/when the same stain disappeared, and any lifetime or pool-replacement log entries. Keep screenshots and the complete run log. Use the same kind of unobstructed surface and a steady view where practical. If a map cannot be loaded or a run is inconclusive, mark it as such rather than counting it as a pass.
 
-**Chambois is the control/baseline map, not an established cause.** Previous blood testing concentrated on Chambois; the other campaign maps have not yet had the same ON/OFF comparison. We therefore do not know whether the behavior is global, map-specific, intermittent, or related to decal lifetime.
+**Chambois is the known-bug map.** This is where the disappearing-blood problem has been observed, and it must be treated as a confirmed problem area rather than a neutral control map.
+
+**Forest has behaved normally so far:** the blood remained visible during the recent test. This is preliminary, not a clean bill of health; Forest needs closer and repeated testing, including both Permanent-decals settings.
+
+The remaining campaign maps still need the same ON/OFF comparison. The purpose of this survey is to establish whether Chambois is uniquely affected or whether other maps also reproduce the problem.
 
 ## Plan B: gray testing surface (on hold)
 
