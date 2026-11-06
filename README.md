@@ -45,7 +45,7 @@ The brightness and sensitivity issues remain open. The crossed-out title-gateway
 
 See the [menu preview status](docs/MENU-POINTER-PREVIEW.md) and [bug log with reproduction/source leads](docs/MENU-SLIDER-BUGS.md). The slider fixes are deferred for a small follow-up patch.
 
-## Known issue: blood decals sometimes disappear
+## KNOWN ISSUE: blood decals sometimes disappear
 
 The experimental blood decals remain **unreliable**. Sometimes they're visible, sometimes they disappear. The exact cause is **STILL UNKNOWN**.
 
