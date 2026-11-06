@@ -1,11 +1,11 @@
 # <img src="cod3recomplogo3.png" alt="COD3RECOMP-ENHANCED logo" width="600">
 
 
-**Call of Duty 3 (Xbox 360) on PC, with some shit I wanted fixed.**
+**Call of Duty 3 (Xbox 360) on PC, with the fixes and improvements I wanted to see.**
 
-This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. I mainly give a shit about the **single-player campaign**, fixing annoyances and adding a few modern touches.
+This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. My main focus is the **single-player campaign**: fixing annoyances and adding a few modern touches.
 
-The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. Legal shit, I know.
+The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. You'll need to supply the game files yourself.
 
 If you want the technical write-up, [here's the formal README](docs/README-FORMAL-BACKUP.md).
 
@@ -13,19 +13,20 @@ If you want the technical write-up, [here's the formal README](docs/README-FORMA
 
 **[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) - [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) - [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
 
-Frank started the recompilation project and PC renderer. hovg-N8 built a hell of a lot on top of it through 0.5.424. I didn't make their work and I'm not going to pretend I did.
+Frank started the recompilation project and PC renderer. hovg-N8 built extensively on top of it through 0.5.424. I didn't make their work and I'm not going to pretend I did.
 
 The upstream project already has major campaign improvements, multiplayer features, bots, killstreaks, HDR options, performance changes, and more. **Those are NOT my additions.**
 
-And to be clear, **I HAVE NOT TESTED MULTIPLAYER.** hovg-N8's fork has multiplayer functionality, but I'm working on the campaign, so I'm not going to claim I've personally verified that shit.
+And to be clear, **I HAVE NOT TESTED MULTIPLAYER.** hovg-N8's fork has multiplayer functionality, but I'm working on the campaign, so I'm not going to claim I've personally verified it.
 
-I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md), and their big development history is in [docs/PATCH-NOTES.md](docs/PATCH-NOTES.md). No one's credits got thrown in the trash.
+I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md), and their big development history is in [docs/PATCH-NOTES.md](docs/PATCH-NOTES.md). The upstream credits and history are preserved.
 
 ## MAIN CHANGES
 
 - **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES. Yes, basic buttons. They were busted.
 - Added **mouse and keyboard button icons/prompts** to the UI.
-- **NEW** Added **REAL mouse support for the menus (preview)**. Hovering highlights the right option, clicking actually selects it, and clicking empty space does fuck-all. **I've tested it in Single Player, other menus, and the in-mission menus, and it works.** This uses the game's own menu controls rather than fake D-pad movement. Some sliders and title-screen navigation still have bugs, so don't mistake this for every last menu being perfect.
+- **NEW** Added **REAL mouse support for the menus (preview)**. Hovering highlights the right option, clicking actually selects it, and clicking empty space does nothing. **I've tested it in Single Player, other menus, and the in-mission menus, and it works.** This uses the game's own menu controls rather than fake D-pad movement. Some sliders and title-screen navigation still have bugs, so don't mistake this for every last menu being perfect.
+- **NEW** Added a native **Quit Game?** confirmation when pressing **Esc at the main menu**, with **Quit** and **Cancel**. This uses the game's own dialog and pointer paths rather than a separate Windows popup. The prompt has been confirmed working in a live playtest. Implementation: [commit `5da18f4`](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/commit/5da18f444e9470e19382196a57875132afd48c2d). [Native-menu groundwork and tests](docs/NATIVE-MENU-DIALOG-GROUNDWORK.md).
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**, because throwing away the whole clip behavior every time wasn't what I wanted.
 - Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore. **CURRENTLY UNSTABLE.**
@@ -33,19 +34,19 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 ## Known menu bugs — still need fixing
 
-The mouse finally points at actual menu entries, but the preview still has three reported bugs:
+The mouse now points at actual menu entries. These issues have been tracked:
 
 - The game's own **brightness slider does not respond** to the mouse.
 - **Sensitivity sliders can keep changing after one click.**
-- Go from the title screen into the menus, then back to **PRESS ENTER**, and **Enter stops working**.
+- ~~Go from the title screen into the menus, then back to **PRESS ENTER**, and **Enter stops working**.~~ (Crossed off the active list after the latest menu update; retained here for reference.)
 
-These are documented, **not fixed**. Mouse hover and clicks have been playtested successfully in the Single Player and in-mission menus, plus other tested menus. The confirmed Single Player build and the expanded playtest executable are preserved locally. Later help-caption/button-capture refinements in this source have not been live playtested. Campaign build and focused simulated-input checks passed, but the tests missed the native slider-repeat behavior; they aren't proof that the bugs above are solved. Full gameplay cursor-capture transitions and multiplayer remain unverified.
+The brightness and sensitivity issues remain open. The crossed-out title-gateway item is retained as a historical report. Mouse hover and clicks have been playtested successfully in the Single Player and in-mission menus, plus other tested menus. The confirmed Single Player build and the expanded playtest executable are preserved locally. Later help-caption/button-capture refinements in this source have not been live playtested. Campaign build and focused simulated-input checks passed, but the tests missed the native slider-repeat behavior; they aren't proof that the bugs above are solved. Full gameplay cursor-capture transitions and multiplayer remain unverified.
 
 See the [menu preview status](docs/MENU-POINTER-PREVIEW.md) and [bug log with reproduction/source leads](docs/MENU-SLIDER-BUGS.md). The slider fixes are deferred for a small follow-up patch.
 
-## THE KNOWN BUG: BLOOD DECALS KEEP FUCKING DISAPPEARING
+## Known issue: blood decals sometimes disappear
 
-The experimental blood decals are **buggy as hell**. Sometimes they're visible, sometimes they disappear. The exact cause is **STILL UNKNOWN**.
+The experimental blood decals remain **unreliable**. Sometimes they're visible, sometimes they disappear. The exact cause is **STILL UNKNOWN**.
 
 Here's what we actually know: real decals have been generated, and visible pixel writes have been confirmed. In a separate diagnostic build, a **synthetic test decal stayed visible for over three minutes**. The frozen source/copy depth coverage matched at **740/740 samples**, with **156 diagnostic checks and 27 normal-renderer checks passed**.
 
@@ -67,12 +68,18 @@ The game sometimes copies the scene to a separate texture for display. Sol check
 
 The latest comparison build passed **168 diagnostic checks**, the developer-mode opt-out check, and **27 normal-renderer checks**. The installed executable/settings weren't changed. **The comparison code and patch are still local/archived, not committed or pushed to GitHub yet.**
 
-**The actual bug is STILL UNSOLVED.** The next useful test is to catch a **real, gameplay-generated** blood stain going from visible to invisible on the same unobstructed surface, with Permanent decals enabled and the pool set to 4,096. Screenshot it before and after, and keep the settings and logs. No random renderer fixes based on a synthetic stain that behaves itself.
-## BUT!
+### Update: controlled campaign blood test (November 2026)
 
-I HAVE A **PLAN B**: ISOLATED TESTING AREA, GRAY WALLS AND A STATIONARY ENEMY. **HAVEN'T TESTED** BUT IT'S A HYPOTHESIS.
+Phase 1 captured a real player hit producing **13 ground decals** during approximately **195 seconds** of gameplay. All **36 capture sets** showed blood drawing, with no logged decal deletion and a prominent stain remaining visible in sampled final images. The camera moved and the captures were spaced apart, so brief disappearances remain possible. **The original disappearing-blood bug was not reproduced and remains unresolved.**
 
-For now, if the blood effects piss you off too, disable them in **F11 - Gameplay - Blood & Gore**.
+An isolated Phase 2 gray-surface prototype is being explored separately. It is not a finished standalone room or a verified fix. Neither test package has been merged into this branch.
+
+**The actual bug is STILL UNSOLVED.** The next useful test is to capture an actual disappearance of a **real, gameplay-generated** stain on the same unobstructed surface, with Permanent decals enabled and the pool set to 4,096. Preserve before/after images, settings and logs. Avoid speculative renderer changes without evidence.
+## Gray-surface testing plan
+
+The longer-term plan is an isolated test area with gray surfaces and a stationary enemy. Current prototypes use existing campaign geometry or an isolated test patch; no standalone room has been validated yet.
+
+For now, if the blood effects bother you, disable them in **F11 - Gameplay - Blood & Gore**.
 
 ## Building this thing (Windows)
 
@@ -90,14 +97,14 @@ Then run the built `CoD3.exe` from its output directory. On first launch, setup 
 .\CoD3.exe --iso "D:\path\Call of Duty 3.iso"
 ```
 
-These commands come from the existing upstream build script and README. I haven't freshly verified a clean build on every machine, so I'm not going to bullshit you about that. More details are in the [archived build instructions](docs/UPSTREAM-README.md#build) and [STATUS.md](STATUS.md).
+These commands come from the existing upstream build script and README. I haven't freshly verified a clean build on every machine, so I won't claim that every setup is verified. More details are in the [archived build instructions](docs/UPSTREAM-README.md#build) and [STATUS.md](STATUS.md).
 
-## AI disclosure, just being clear
+## AI assistance
 
-**This project was assisted with Codex and playtested by me.** You're free to dislike AI-assisted development, but I'd rather be transparent about my tools than pretend I didn't use them. Also this README was also written by Codex, haha. But this wasn't. Neither this. I'm not lying. I'm just wasting your time.
+**This project was assisted with Codex and playtested by me.** I want to be transparent about the tools I use. This README has also been edited with AI assistance.
 
-I still decide what goes into my fork, and I actually play the dang game.
+I still decide what goes into my fork, and I playtest the changes myself.
 
 Original game assets are not provided. Upstream code and third-party components keep their own attribution and licensing requirements. This README doesn't magically relicense anybody else's work.
 
-If you're looking for some polished, bug-free miracle port, **this ain't it, bro**. I'm tinkering with a game I wanted to play on PC, fixing things as I go, and documenting the bugs instead of hiding them.
+This is an experimental fork, not a polished, bug-free release. I'm improving a game I wanted to play on PC and documenting the bugs instead of hiding them.
