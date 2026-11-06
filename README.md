@@ -75,10 +75,28 @@ Phase 1 captured a real player hit producing **13 ground decals** during approxi
 
 An isolated Phase 2 gray-surface prototype is being explored separately. It is not a finished standalone room or a verified fix. Neither test package has been merged into this branch.
 
-**The actual bug is STILL UNSOLVED.** The next useful test is to capture an actual disappearance of a **real, gameplay-generated** stain on the same unobstructed surface, with Permanent decals enabled and the pool set to 4,096. Preserve before/after images, settings and logs. Avoid speculative renderer changes without evidence.
-## Gray-surface testing plan
+**The actual bug is STILL UNSOLVED.** Do not make speculative renderer changes until we have compared the campaign maps and both Permanent-decals settings.
 
-The longer-term plan is an isolated test area with gray surfaces and a stationary enemy. Current prototypes use existing campaign geometry or an isolated test patch; no standalone room has been validated yet.
+## Current plan: campaign-wide blood survey (Plan C)
+
+Before spending more development time on the gray testing surface or another renderer diagnostic, test **every available single-player campaign map twice**:
+
+1. **Permanent decals OFF:** use normal decal lifetime/fading and observe whether blood disappears.
+2. **Permanent decals ON:** disable lifetime expiry and observe whether blood still disappears.
+
+Keep the decal pool at **4,096** for comparable runs where the setting is available. Permanent ON disables expiry, but it does **not** prevent FIFO pool replacement, so record any pool-replacement events separately.
+
+For every run, record the map, Permanent setting, whether a real player hit created custom decals, whether/when the same stain disappeared, and any lifetime or pool-replacement log entries. Keep screenshots and the complete run log. Use the same kind of unobstructed surface and a steady view where practical. If a map cannot be loaded or a run is inconclusive, mark it as such rather than counting it as a pass.
+
+**Chambois is the control/baseline map, not an established cause.** Previous blood testing concentrated on Chambois; the other campaign maps have not yet had the same ON/OFF comparison. We therefore do not know whether the behavior is global, map-specific, intermittent, or related to decal lifetime.
+
+## Plan B: gray testing surface (on hold)
+
+A developer-only gray-surface prototype using existing campaign geometry has been explored, but the first live version produced corrupted visuals and no usable weapon/fire input. A later repair removed the broad shader override and uses a small manually placed ground patch; its placement and equivalence still need live verification. Keep this plan on hold until the campaign-wide ON/OFF survey gives us a reason to resume it.
+
+## Plan A: targeted renderer investigation (on hold)
+
+Return to targeted renderer diagnostics or fixes only after the map survey provides evidence pointing to a shared rendering issue or a specific map-dependent path. Do not treat a synthetic/frozen decal test as proof that real gameplay decals cannot disappear.
 
 For now, if the blood effects bother you, disable them in **F11 - Gameplay - Blood & Gore**.
 
