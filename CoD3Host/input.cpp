@@ -595,6 +595,12 @@ namespace
         static bool escapeWasDown=false;
         const bool escapePressed=escapeDown&&!escapeWasDown;
         escapeWasDown=escapeDown;
+#ifndef COD3_MP
+        static bool quitOpeningKey=false;
+        if(!inLevel && escapePressed && NativeMenuPointer::RequestQuit()) quitOpeningKey=true;
+        const bool suppressQuitKey=quitOpeningKey;
+        if(!escapeDown) quitOpeningKey=false;
+#endif
         // Start is held for a few reads after Escape frees the pointer, so
         // the title's own poll, which is slower than these reads, sees it.
         static int startReadsLeft = 0;
@@ -697,7 +703,7 @@ namespace
         // Front-end cancel is controller B; Back is the objectives button.
         static int backReadsLeft=0;
         if(menuVisible && inLevel && escapePressed) backReadsLeft=10;
-        if (!held && ((!inLevel && escapeDown) || backReadsLeft>0)) pad.buttons |= PadB;
+        if (!held && ((!inLevel && escapeDown && !suppressQuitKey) || backReadsLeft>0)) pad.buttons |= PadB;
         if(backReadsLeft>0) --backReadsLeft;
 #endif
         if (inLevel && startReadsLeft > 0) { pad.buttons |= PadStart; startReadsLeft--; }

@@ -24,6 +24,9 @@ namespace Window { bool HasFocus() { return focused; } void* Handle() { return r
 namespace Overlay { bool IsOpen() { return overlay; } }
 PPC_FUNC_IMPL(__imp__sub_82511168) {}
 PPC_FUNC_IMPL(__imp__sub_824CDB28) {}
+static unsigned quitDispatches=0,quitDispatchRow=99;
+PPC_FUNC_IMPL(__imp__sub_824CDD78) { ++quitDispatches;quitDispatchRow=ctx.r4.u32; }
+PPC_FUNC_IMPL(__imp__sub_824C48B8) {}
 static uint32_t next=0x40010000;
 static int confirms=0,backs=0,steps=0;
 static uint32_t lastAction=0;
@@ -33,6 +36,7 @@ static void Commit(uint64_t offset,size_t size) {
     assert(VirtualAlloc(Guest::Base+start,size_t(end-start),MEM_COMMIT,PAGE_READWRITE));
 }
 static uint32_t Alloc() { uint32_t address=next;next+=0x1000;Commit(address,0x1000);return address; }
+namespace Guest { uint32_t AllocatePhysical(uint32_t) { return Alloc(); } }
 static void W(uint32_t p,uint32_t value) { Commit(p,4);Guest::Write32(Guest::Base,p,value); }
 static void H(uint32_t p,uint16_t value) { Commit(p,2);Guest::Write16(Guest::Base,p,value); }
 static void B(uint32_t p,uint8_t value) { Commit(p,1);Guest::Write8(Guest::Base,p,value); }
@@ -48,6 +52,9 @@ PPC_FUNC_IMPL(FakeModalSelect) {
 PPC_FUNC_IMPL(FakeWidth) { ctx.f1.f64=Guest::Read32(base,ctx.r3.u32+0x200); }
 PPC_FUNC_IMPL(FakeHeight) { ctx.f1.f64=12; }
 PPC_FUNC_IMPL(FakeRefresh) {}
+PPC_FUNC_IMPL(FakeOpenQuit) { W(ctx.r3.u32+12,0); }
+PPC_FUNC_IMPL(FakeAddQuit) { auto p=ctx.r3.u32; auto n=Guest::Read32(base,p+56); W(p+60+4*n,ctx.r5.u32); W(p+56,n+1); }
+PPC_FUNC_IMPL(FakeConfirmQuit) { sub_824CDD78(ctx,base); }
 PPC_FUNC_IMPL(FakeDispatch) {
     lastSystem=ctx.r3.u32;lastLocal=ctx.r5.u32;lastAction=ctx.r4.u32;
     if(ctx.r4.u32==64) ++confirms;
@@ -118,5 +125,19 @@ int main() {
     auto mainMenu=MakeMenu(0x82071DDC,5);W(front+12,1);W(soundArray+4,mainMenu);ResetPointer();
     B(mainMenu+72,1);Update(context,Guest::Base);assert(NativeMenuPointer::Active()&&active.load()==0);
     Click(110,67);assert(confirms==0);B(mainMenu+72,0);Update(context,Guest::Base);Click(110,67);assert(confirms==1);
+    // The native dialog is opened only on the ready main menu, with a safe
+    // default and two guest callbacks; the dispatcher scopes Back to Cancel.
+    B(mainMenu+72,0); W(modal+12,0xFFFFFFFF); W(modal+60,0);
+    auto modalArray=Guest::Read32(Guest::Base,modal+4); auto spare=MakeMenu(0x820718EC,4);
+    W(modalArray,modalMenu);W(modalArray+4,spare);W(modalMenu+56,0);W(pres+56,2);
+    Bind(0x824D31E0,FakeOpenQuit);Bind(0x824C4428,FakeAddQuit);Bind(0x824CDB28,__imp__sub_824CDB28);
+    Bind(0x824CDD78,FakeConfirmQuit);Bind(0x823F86D0,FakeRefresh);
+    assert(NativeMenuPointer::RequestQuit());Update(context,Guest::Base);
+    assert(quitMenu==modalMenu&&Guest::Read32(Guest::Base,modalMenu+56)==2);
+    assert(Guest::Read16(Guest::Base,modalMenu+34)==1);
+    assert(strcmp(reinterpret_cast<char*>(Guest::Base+quitStrings),"Quit Game?")==0);
+    PPCContext back=context;back.r3.u32=modal;back.r4.u32=128;sub_824C48B8(back,Guest::Base);
+    assert(quitDispatches==1&&quitDispatchRow==1);
+    assert(!NativeMenuPointer::RequestQuit());
     VirtualFree(Guest::Base,0,MEM_RELEASE);puts("Actual pointer module: menu, modal, pause, slider and cancellation checks passed.");
 }

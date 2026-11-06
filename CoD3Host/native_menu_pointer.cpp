@@ -15,6 +15,7 @@
 
 #ifdef COD3_MP
 bool NativeMenuPointer::Active() { return false; }
+bool NativeMenuPointer::RequestQuit() { return false; }
 bool NativeMenuPointer::InMission() { return false; }
 bool NativeMenuPointer::MenuVisible() { return false; }
 void NativeMenuPointer::Button(bool,bool,int,int) {}
@@ -24,6 +25,10 @@ namespace {
 constexpr uint32_t Manager=0x82A8DF2C;
 std::atomic<uint64_t> active{0};
 std::atomic<uint64_t> modalRevision{0};
+std::atomic<bool> quitRequested{false};
+uint32_t quitMenu=0;
+uint32_t quitStrings=0;
+bool configuringQuit=false;
 struct Event { uint64_t token; bool right,down; int x,y; };
 std::mutex mutex;
 std::vector<Event> events;
@@ -117,6 +122,50 @@ Target Resolve(uint8_t* base) {
         }
     }
     return t;
+}
+bool MainReady(uint8_t* base) {
+    const Target t=Resolve(base);
+    const uint32_t frontend=Guest::Read32(base,Manager+28);
+    return t.owned&&t.ready&&!t.modal&&Valid(frontend)&&t.system==frontend&&
+        Guest::Read32(base,frontend+12)==1&&Guest::Read32(base,t.menu)==0x82071DDC;
+}
+void Invoke(PPCContext& ctx,uint8_t* base,uint32_t fn,uint32_t a,uint32_t b=0,uint32_t c=0,uint32_t d=0,uint32_t e=0,uint32_t f=0) {
+    if(auto* target=Guest::Lookup(fn)) {
+        PPCContext call=ctx;call.r1.u32=(ctx.r1.u32-0x2000)&~15u;
+        call.r3.u64=a;call.r4.u64=b;call.r5.u64=c;call.r6.u64=d;call.r7.u64=e;call.r8.u64=f;call.lr=0;
+        target(call,base);
+    }
+}
+void OpenQuit(PPCContext& ctx,uint8_t* base) {
+    if(!MainReady(base)) return;
+    const uint32_t modal=Guest::Read32(base,Manager+200);
+    if(!Valid(modal)||Guest::Read32(base,modal)!=0x820719D4||Guest::Read32(base,modal+60)!=0||
+       int32_t(Guest::Read32(base,modal+12))>=0) return;
+    const uint32_t array=Guest::Read32(base,modal+4),presentation=Guest::Read32(base,modal+52);
+    if(!Valid(array)||!Valid(presentation)) return;
+    for(int i=0;i<2;i++) { const uint32_t item=Guest::Read32(base,array+4*i);
+        if(!Valid(item)||Guest::Read32(base,item)!=0x820718EC) return; }
+    for(uint32_t fn:{0x824D31E0u,0x824C4428u,0x824BDDE8u,0x824CDB28u,0x824CDD78u,0x823F86D0u}) if(!Guest::Lookup(fn)) return;
+    if(!quitStrings) {
+        quitStrings=Guest::AllocatePhysical(256);
+        if(!quitStrings) return;
+        memcpy(base+quitStrings,"Quit Game?",11);
+        memcpy(base+quitStrings+32,"Quit",5);
+        memcpy(base+quitStrings+64,"Cancel",7);
+    }
+    // Mirrors the game's two-button dialog setup (0x823FC2C8).
+    // The callbacks return true so the native dispatcher closes the dialog.
+    Invoke(ctx,base,0x824D31E0,modal,quitStrings,0,0,0x82065B28,1);
+    const int index=int32_t(Guest::Read32(base,modal+12));
+    if(index<0||index>1) return;
+    const uint32_t menu=Guest::Read32(base,array+(index==0?0:4));
+    Invoke(ctx,base,0x824C4428,menu,quitStrings+32,0x823F86D0);
+    Invoke(ctx,base,0x824C4428,menu,quitStrings+64,0x823F86D0);
+    Guest::Write16(base,menu+34,1);
+    Invoke(ctx,base,0x824BDDE8,presentation,1);
+    quitMenu=menu;configuringQuit=true;
+    Invoke(ctx,base,0x824CDB28,menu,1,0);
+    configuringQuit=false;
 }
 float Measure(PPCContext& ctx,uint8_t* base,uint32_t function,uint32_t text,uint32_t scale) {
     auto* target=Guest::Lookup(function);if(!target) return 0;
@@ -313,7 +362,9 @@ void Adjust(PPCContext& ctx,uint8_t* base,const Target& t,int row,int x,int y) {
     }
 }
 void Update(PPCContext& ctx,uint8_t* base) {
+    if(quitRequested.exchange(false)) OpenQuit(ctx,base);
     Target target=Resolve(base);
+    if(quitMenu && (!target.modal || target.menu!=quitMenu)) quitMenu=0;
     static const bool ignored=[] {
         const char* value=getenv("COD3_NOKEYBOARD");if(!value) value=getenv("COD3_BACKGROUND");
         return value&&*value&&*value!='0';
@@ -372,6 +423,11 @@ void Update(PPCContext& ctx,uint8_t* base) {
 }
 }
 bool NativeMenuPointer::Active() { return Resolve(Guest::Base).owned; }
+bool NativeMenuPointer::RequestQuit() {
+    auto* base=Guest::Base;
+    if(!base||!Window::HasFocus()||Overlay::IsOpen()||!MainReady(base)) return false;
+    quitRequested.store(true);return true;
+}
 bool NativeMenuPointer::InMission() {
     auto* base=Guest::Base;if(!base) return false;
     // Native usercmd production requires connection state 2. Confirm that
@@ -405,10 +461,31 @@ PPC_FUNC(sub_82511168) {
     __imp__sub_82511168(ctx,base);
     Update(ctx,base);
 }
+// Route Back on this confirmation to Cancel even when Quit is highlighted.
+extern "C" PPC_FUNC(__imp__sub_824C48B8);
+PPC_FUNC(sub_824C48B8) {
+    const Target t=Resolve(base);
+    if(quitMenu && t.modal && t.menu==quitMenu && ctx.r3.u32==t.system && ctx.r4.u32==128) {
+        Invoke(ctx,base,0x824CDD78,quitMenu,1);
+        return;
+    }
+    __imp__sub_824C48B8(ctx,base);
+}
+// Native confirmation dispatcher: row 0 quits; row 1 uses the normal
+// callback and modal close. Other dialogs always retain their guest behavior.
+extern "C" PPC_FUNC(__imp__sub_824CDD78);
+PPC_FUNC(sub_824CDD78) {
+    if(quitMenu && ctx.r3.u32==quitMenu && ctx.r4.u32==0) {
+        PostMessageW(static_cast<HWND>(Window::Handle()),WM_CLOSE,0,0);
+        ctx.r4.u64=1;
+    }
+    __imp__sub_824CDD78(ctx,base);
+}
 // A pooled dialog can be configured again at the same address. Invalidate
 // all old pointer presses when its callbacks/captions are replaced.
 extern "C" PPC_FUNC(__imp__sub_824CDB28);
 PPC_FUNC(sub_824CDB28) {
+    if(!configuringQuit && ctx.r3.u32==quitMenu) quitMenu=0;
     modalRevision.fetch_add(1);
     NativeMenuPointer::Cancel();
     __imp__sub_824CDB28(ctx,base);
