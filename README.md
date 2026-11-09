@@ -75,11 +75,19 @@ Phase 1 captured a real player hit producing **13 ground decals** during approxi
 
 An isolated Phase 2 gray-surface prototype is being explored separately. It is not a finished standalone room or a verified fix. Neither test package has been merged into this branch.
 
-**The actual bug is STILL UNSOLVED.** Do not make speculative renderer changes until we have compared the campaign maps and both Permanent-decals settings.
+**The actual bug is STILL UNSOLVED.** The earlier proposed campaign-map comparison is now deferred in favor of the architecture reassessment described below.
 
-## Current plan: campaign-wide blood survey (Plan C)
+## Blood renderer: architecture reassessment (planned, on hold)
 
-Before spending more development time on the gray testing surface or another renderer diagnostic, test **every available single-player campaign map twice**:
+The experimental blood decals are **disabled by default**, and their intermittent disappearance remains **unresolved**. A read-only, source-based review found that the hit/droplet/decal simulation appears broadly reasonable, but the rendering integration relies on **draw-order heuristics** and selecting a projection matrix from shader constants on a qualifying draw. These are **potential architectural weaknesses, not confirmed causes** of the missing stains. Previous synthetic and controlled tests showed decals can render, but did not establish reliable insertion during normal campaign rendering.
+
+**Next step, only when development resumes:** Have Sol independently inspect the actual code and rendering pipeline from first principles. Verify the guest trace calling convention, the view/projection source, depth state, and where world draws and in-game decals occur. Propose a deterministic rendering strategy, with a clear explanation of what can be safely reused from the existing simulation, **before implementing changes**. If a redesign is approved, validate it on representative campaign maps with a bounded test plan. If it remains unreliable, keep the effect off and shelve it rather than repeating endless diagnostics.
+
+**No campaign-wide blood survey or further diagnostic run is currently required.** The plans below are retained as historical investigation notes, not active instructions.
+
+## Archived plan: campaign-wide blood survey (formerly Plan C)
+
+The earlier, now-deferred proposal was to test **every available single-player campaign map twice**:
 
 1. **Permanent decals OFF:** use normal decal lifetime/fading and observe whether blood disappears.
 2. **Permanent decals ON:** disable lifetime expiry and observe whether blood still disappears.
