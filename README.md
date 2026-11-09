@@ -83,6 +83,8 @@ The experimental blood decals are **disabled by default**, and their intermitten
 
 **Next step, only when development resumes:** Have Sol independently inspect the actual code and rendering pipeline from first principles. Verify the guest trace calling convention, the view/projection source, depth state, and where world draws and in-game decals occur. Propose a deterministic rendering strategy, with a clear explanation of what can be safely reused from the existing simulation, **before implementing changes**. If a redesign is approved, validate it on representative campaign maps with a bounded test plan. If it remains unreliable, keep the effect off and shelve it rather than repeating endless diagnostics.
 
+**Mandatory multi-map acceptance test:** No blood-renderer fix can be considered verified from a single map, synthetic test, frozen scene, or successful draw call alone. Before calling it fixed, test normal gameplay on **multiple single-player campaign maps**, including **Chambois** (confirmed disappearing-blood case) and **Forest** (preliminary comparison), plus maps with different terrain and surfaces. Use real gunfire, camera movement, and both **Permanent decals ON and OFF**. Track individual stains and distinguish unexpected disappearance from intended expiration, fading, occlusion, or FIFO pool replacement. If Chambois still fails, the fix is **not verified**, regardless of passing diagnostic checks.
+
 **No campaign-wide blood survey or further diagnostic run is currently required.** The plans below are retained as historical investigation notes, not active instructions.
 
 ## Archived plan: campaign-wide blood survey (formerly Plan C)
