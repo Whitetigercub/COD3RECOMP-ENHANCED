@@ -23,15 +23,15 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 ## MAIN CHANGES
 
--Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore. **Recent hands-on tests report persistent blood on The Island and previously problematic Chambois; this does not establish that every map/checkpoint scenario passes.**
-- **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES. Yes, basic buttons. They were busted.
-- Added **mouse and keyboard button icons/prompts** to the UI.
-- Added **REAL mouse support for the menus**. Hovering highlights the right option, clicking actually selects it, and clicking empty space does nothing. **I've tested it in Single Player, other menus, and the in-mission menus, and it works.** This uses the game's own menu controls rather than fake D-pad movement. Some sliders and title-screen navigation still have bugs, so don't mistake this for every last menu being perfect.
-- * Added a native **Quit Game?** confirmation when pressing **Esc at the main menu**, with **Quit** and **Cancel**. This uses the game's own dialog and pointer paths rather than a separate Windows popup. The prompt has been confirmed working in a live playtest. Implementation: [commit `5da18f4`](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/commit/5da18f444e9470e19382196a57875132afd48c2d). [Native-menu groundwork and tests](docs/NATIVE-MENU-DIALOG-GROUNDWORK.md).
-  - **Small limitation:** The quit confirmation is available from the main menu, not the initial **PRESS ENTER** screen. Press Enter to reach the menu before using Esc to quit.
+- Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore.
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**.
 - Added **Increased sprint speed**. 3x longer sprint and 40% faster recovery time, F11 - Gameplay, Toggle
+- **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES.
+- Added **mouse and keyboard button icons/prompts** to the UI.
+- Added **REAL mouse support for the menus**. Hovering highlights the right option, clicking actually selects it, and clicking empty space does nothing. **I've tested it in Single Player, other menus, and the in-mission menus, and it works.** This uses the game's own menu controls rather than fake D-pad movement. Some sliders and title-screen navigation still have bugs, so don't mistake this for every last menu being perfect.
+- Added a native **Quit Game?** confirmation when pressing **Esc at the main menu**, with **Quit** and **Cancel**. This uses the game's own dialog and pointer paths rather than a separate Windows popup. The prompt has been confirmed working in a live playtest. Implementation: [commit `5da18f4`](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/commit/5da18f444e9470e19382196a57875132afd48c2d). [Native-menu groundwork and tests](docs/NATIVE-MENU-DIALOG-GROUNDWORK.md).
+  - **Small limitation:** The quit confirmation is available from the main menu, not the initial **PRESS ENTER** screen. Press Enter to reach the menu before using Esc to quit.
 - Added experimental blood-decal projection filtering and rendering diagnostics.
 
 ## Known menu bugs — still need fixing
