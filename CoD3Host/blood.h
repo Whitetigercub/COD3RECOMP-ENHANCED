@@ -10,6 +10,10 @@ struct Options {
     float cloudSize=1.0f, cloudOpacity=1.0f;
     float size=1.0f, color[3]={0.30f,0.018f,0.012f};
 };
+enum class Preset { Custom, Minimal, Normal, Enhanced, Brutal };
+Options PresetOptions(Preset preset);
+Preset DetectPreset(const Options& options);
+const char* PresetName(Preset preset);
 struct Impact { float point[3]{}, direction[3]{}; uint32_t target=0; int health=0, damage=0; bool valid=false, playerFired=false; uint64_t event=0; };
 void Clamp(Options& options);
 void Configure(const Options& options);

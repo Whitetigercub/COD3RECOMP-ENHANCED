@@ -4,12 +4,14 @@
 #include "kernel.h"
 #include "overlay.h"
 #include <Windows.h>
+#include <algorithm>
 #include <array>
 #include <atomic>
-#include <mutex>
-#include <cstring>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <mutex>
 using namespace BloodMath;
 namespace {
 constexpr int ParticleLimit=Blood::MaxParticles, DecalLimit=Blood::MaxDecals, QueueLimit=32, TraceLimit=ParticleLimit;
@@ -133,6 +135,71 @@ void Blood::Clamp(Options& o){
  o.amount=std::clamp(o.amount,0,200);o.density=std::clamp(o.density,0,3);o.persistence=std::clamp(o.persistence,0,600);o.maxDecals=std::clamp(o.maxDecals,8,DecalLimit);
  if(!std::isfinite(o.size))o.size=1;o.size=std::clamp(o.size,0.25f,3.0f);
  for(auto& c:o.color){if(!std::isfinite(c))c=0;c=std::clamp(c,0.0f,1.0f);}
+}
+
+namespace {
+bool BloodOptionsEqual(const Blood::Options& a,const Blood::Options& b){
+ return a.enabled==b.enabled&&a.decals==b.decals&&a.physics==b.physics&&
+  a.amount==b.amount&&a.density==b.density&&a.persistence==b.persistence&&a.maxDecals==b.maxDecals&&
+  std::fabs(a.cloudSize-b.cloudSize)<0.0001f&&std::fabs(a.cloudOpacity-b.cloudOpacity)<0.0001f&&std::fabs(a.size-b.size)<0.0001f&&
+  std::fabs(a.color[0]-b.color[0])<0.0001f&&std::fabs(a.color[1]-b.color[1])<0.0001f&&std::fabs(a.color[2]-b.color[2])<0.0001f;
+}
+}
+
+Blood::Options Blood::PresetOptions(Preset preset){
+ Options o{};
+ switch(preset){
+ case Preset::Minimal:
+  o.enabled=true; o.decals=true; o.physics=true;
+  o.amount=50; o.density=0; o.persistence=12; o.maxDecals=24;
+  o.cloudSize=.75f; o.cloudOpacity=.75f; o.size=.75f;
+  o.color[0]=0.30f; o.color[1]=0.018f; o.color[2]=0.012f;
+  break;
+ case Preset::Normal:
+  o.enabled=true; o.decals=true; o.physics=true;
+  o.amount=80; o.density=1; o.persistence=30; o.maxDecals=64;
+  o.cloudSize=1.00f; o.cloudOpacity=1.00f; o.size=1.00f;
+  o.color[0]=0.30f; o.color[1]=0.018f; o.color[2]=0.012f;
+  break;
+ case Preset::Enhanced:
+  o.enabled=true; o.decals=true; o.physics=true;
+  o.amount=120; o.density=2; o.persistence=90; o.maxDecals=256;
+  o.cloudSize=1.15f; o.cloudOpacity=1.10f; o.size=1.15f;
+  o.color[0]=0.30f; o.color[1]=0.018f; o.color[2]=0.012f;
+  break;
+ case Preset::Brutal:
+  o.enabled=true; o.decals=true; o.physics=true;
+  o.amount=200; o.density=3; o.persistence=0; o.maxDecals=Blood::MaxDecals;
+  o.cloudSize=1.50f; o.cloudOpacity=1.35f; o.size=1.40f;
+  o.color[0]=0.30f; o.color[1]=0.018f; o.color[2]=0.012f;
+  break;
+ case Preset::Custom:
+ default:
+  o=Options{};
+  break;
+ }
+ Clamp(o);
+ return o;
+}
+
+Blood::Preset Blood::DetectPreset(const Options& options){
+ Options o=options; Clamp(o);
+ if(BloodOptionsEqual(o,PresetOptions(Preset::Minimal))) return Preset::Minimal;
+ if(BloodOptionsEqual(o,PresetOptions(Preset::Normal))) return Preset::Normal;
+ if(BloodOptionsEqual(o,PresetOptions(Preset::Enhanced))) return Preset::Enhanced;
+ if(BloodOptionsEqual(o,PresetOptions(Preset::Brutal))) return Preset::Brutal;
+ return Preset::Custom;
+}
+
+const char* Blood::PresetName(Preset preset){
+ switch(preset){
+ case Preset::Minimal: return "MINIMAL";
+ case Preset::Normal: return "NORMAL";
+ case Preset::Enhanced: return "ENHANCED";
+ case Preset::Brutal: return "BRUTAL";
+ case Preset::Custom:
+ default: return "Custom";
+ }
 }
 void Blood::Configure(const Options& input){
  std::lock_guard<std::mutex> lock(mutex);auto next=input;Clamp(next);
