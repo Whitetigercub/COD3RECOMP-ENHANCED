@@ -23,7 +23,7 @@ void Update(PPCContext& context,uint8_t* base);
 void Before(PPCContext& context,uint8_t* base,Impact& impact);
 void After(uint8_t* base,const Impact& impact);
 bool Active();
-struct WorldVertex {float x,y,z;uint32_t color;};
+struct WorldVertex {float x,y,z;uint32_t color;uint32_t mask=0;};
 int BuildWorld(WorldVertex* output,int capacity);
 struct Stats { int particles=0, decals=0, queued=0, traces=0; };
 Stats Status();

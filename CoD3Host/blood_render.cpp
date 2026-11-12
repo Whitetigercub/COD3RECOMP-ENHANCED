@@ -2,6 +2,7 @@
 extern void BloodDiagnosticEye(float* eye);
 #include "blood_render.h"
 #include "blood.h"
+#include "blood_mask.h"
 #include <Windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -17,26 +18,70 @@ namespace {
 ComPtr<ID3D11VertexShader> vs;ComPtr<ID3D11PixelShader> ps;
 ComPtr<ID3D11Buffer> vertices,constants;ComPtr<ID3D11InputLayout> layout;
 ComPtr<ID3D11BlendState> blend;ComPtr<ID3D11DepthStencilState> depth;ComPtr<ID3D11RasterizerState> raster;
+ComPtr<ID3D11ShaderResourceView> masks;
+ComPtr<ID3D11SamplerState> maskSampler;
 constexpr int Capacity=Blood::MaxVertices;
+
+bool CreateMasks(ID3D11Device* device){
+ using namespace BloodMask;
+ // Two immutable R8 masks with box-filtered mips for distant stains.
+ std::array<std::array<uint8_t,Side*Side*4/3+1>,Layers> pixels{};
+ std::array<D3D11_SUBRESOURCE_DATA,Layers*Mips> data{};
+ for(int layer=0;layer<Layers;layer++){
+  auto& image=pixels[layer];
+  for(int y=0;y<Side;y++)for(int x=0;x<Side;x++)image[y*Side+x]=Texel(layer,x,y);
+  int previous=0,offset=0;
+  for(int mip=0,side=Side;mip<Mips;mip++,side/=2){
+   data[layer*Mips+mip]={image.data()+offset,UINT(side),0};
+   if(mip)for(int y=0;y<side;y++)for(int x=0;x<side;x++){
+    const int i=previous+4*y*side+2*x;
+    image[offset+y*side+x]=uint8_t((image[i]+image[i+1]+image[i+2*side]+image[i+2*side+1]+2)/4);
+   }
+   previous=offset;offset+=side*side;
+  }
+ }
+ D3D11_TEXTURE2D_DESC desc{};
+ desc.Width=desc.Height=Side;desc.MipLevels=Mips;desc.ArraySize=Layers;
+ desc.Format=DXGI_FORMAT_R8_UNORM;desc.SampleDesc.Count=1;
+ desc.Usage=D3D11_USAGE_IMMUTABLE;desc.BindFlags=D3D11_BIND_SHADER_RESOURCE;
+ ComPtr<ID3D11Texture2D> texture;
+ if(FAILED(device->CreateTexture2D(&desc,data.data(),&texture))||
+    FAILED(device->CreateShaderResourceView(texture.Get(),nullptr,&masks)))return false;
+ D3D11_SAMPLER_DESC sampler{};
+ sampler.Filter=D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+ sampler.AddressU=sampler.AddressV=sampler.AddressW=D3D11_TEXTURE_ADDRESS_CLAMP;
+ sampler.MaxAnisotropy=1;sampler.ComparisonFunc=D3D11_COMPARISON_NEVER;
+ sampler.MaxLOD=D3D11_FLOAT32_MAX;
+ return SUCCEEDED(device->CreateSamplerState(&sampler,&maskSampler));
+}
 bool Initialize(ID3D11Device* device){
  if(vs)return true;
  const char* source=R"(
  cbuffer Projection:register(b0){float4 rows[4];float4 scale;float4 offset;float4 target;uint4 flags;};
- struct V{float3 p:POSITION;float4 c:COLOR;};struct O{float4 p:SV_Position;float4 c:COLOR;};
+ Texture2DArray<float> masks:register(t15);
+ SamplerState maskSampler:register(s15);
+ struct V{float3 p:POSITION;float4 c:COLOR;uint mask:TEXCOORD0;};
+ struct O{float4 p:SV_Position;float4 c:COLOR;float2 uv:TEXCOORD0;nointerpolation uint layer:TEXCOORD1;};
  O VS(V v){O o;float4 w=float4(v.p,1);float4 p=float4(dot(rows[0],w),dot(rows[1],w),dot(rows[2],w),dot(rows[3],w));
  uint f=flags.x;float ww=(f&256)?1:p.w;float xs=(f&1)?scale.x:1;float xo=(f&2)?offset.x:0;
  float ys=(f&4)?scale.y:1;float yo=(f&8)?offset.y:0;float zs=(f&16)?scale.z:1;float zo=(f&32)?offset.z:0;
  float centre=(f&65536)?0:.5;
  float z=(f&512)?(p.z*zs+zo)*ww:(p.z*zs+zo*ww);
- o.p=float4(p.x*(2*xs/target.x)+ww*(2*(xo+centre)/target.x-1),-(p.y*(2*ys/target.y)+ww*(2*(yo+centre)/target.y-1)),z,ww);o.c=v.c;return o;}
- float4 PS(O v):SV_Target{return v.c;}
+ o.p=float4(p.x*(2*xs/target.x)+ww*(2*(xo+centre)/target.x-1),-(p.y*(2*ys/target.y)+ww*(2*(yo+centre)/target.y-1)),z,ww);o.c=v.c;
+ uint2 uv=uint2(v.mask&255,(v.mask>>8)&255);
+ o.uv=all(uv==128)?float2(.5,.5):float2(uv)/255;
+ o.layer=v.mask>>16;return o;}
+ float4 PS(O v):SV_Target{
+  [branch] if(v.layer!=0) v.c.a*=masks.Sample(maskSampler,float3(v.uv,v.layer-1));
+  return v.c;
+ }
  )";
  ComPtr<ID3DBlob> vb,pb,error;
  if(FAILED(D3DCompile(source,strlen(source),"blood world pass",nullptr,nullptr,"VS","vs_5_0",D3DCOMPILE_OPTIMIZATION_LEVEL3,0,&vb,&error))||
  FAILED(D3DCompile(source,strlen(source),"blood world pass",nullptr,nullptr,"PS","ps_5_0",D3DCOMPILE_OPTIMIZATION_LEVEL3,0,&pb,&error))){printf("blood: world shader compilation failed\n");return false;}
- D3D11_INPUT_ELEMENT_DESC elements[]={{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},{"COLOR",0,DXGI_FORMAT_R8G8B8A8_UNORM,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}};
+ D3D11_INPUT_ELEMENT_DESC elements[]={{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},{"COLOR",0,DXGI_FORMAT_R8G8B8A8_UNORM,0,12,D3D11_INPUT_PER_VERTEX_DATA,0},{"TEXCOORD",0,DXGI_FORMAT_R32_UINT,0,16,D3D11_INPUT_PER_VERTEX_DATA,0}};
  ComPtr<ID3D11VertexShader> newVs;
- if(FAILED(device->CreateVertexShader(vb->GetBufferPointer(),vb->GetBufferSize(),nullptr,&newVs))||FAILED(device->CreatePixelShader(pb->GetBufferPointer(),pb->GetBufferSize(),nullptr,&ps))||FAILED(device->CreateInputLayout(elements,2,vb->GetBufferPointer(),vb->GetBufferSize(),&layout)))return false;
+ if(FAILED(device->CreateVertexShader(vb->GetBufferPointer(),vb->GetBufferSize(),nullptr,&newVs))||FAILED(device->CreatePixelShader(pb->GetBufferPointer(),pb->GetBufferSize(),nullptr,&ps))||FAILED(device->CreateInputLayout(elements,3,vb->GetBufferPointer(),vb->GetBufferSize(),&layout)))return false;
  D3D11_BUFFER_DESC b{};b.ByteWidth=Capacity*sizeof(Blood::WorldVertex);b.Usage=D3D11_USAGE_DYNAMIC;b.BindFlags=D3D11_BIND_VERTEX_BUFFER;b.CPUAccessFlags=D3D11_CPU_ACCESS_WRITE;
  if(FAILED(device->CreateBuffer(&b,nullptr,&vertices)))return false;
  b.ByteWidth=sizeof(BloodRender::Projection);b.BindFlags=D3D11_BIND_CONSTANT_BUFFER;
@@ -45,6 +90,7 @@ bool Initialize(ID3D11Device* device){
  D3D11_DEPTH_STENCIL_DESC ds{};ds.DepthEnable=true;ds.DepthWriteMask=D3D11_DEPTH_WRITE_MASK_ZERO;ds.DepthFunc=D3D11_COMPARISON_GREATER_EQUAL;
  D3D11_RASTERIZER_DESC rs{};rs.FillMode=D3D11_FILL_SOLID;rs.CullMode=D3D11_CULL_NONE;rs.DepthClipEnable=true;rs.MultisampleEnable=true;rs.DepthBias=32;rs.SlopeScaledDepthBias=1.0f;rs.DepthBiasClamp=.00002f;
  if(FAILED(device->CreateBlendState(&blendDesc,&blend))||FAILED(device->CreateDepthStencilState(&ds,&depth))||FAILED(device->CreateRasterizerState(&rs,&raster)))return false;
+ if(!CreateMasks(device))return false;
  vs=newVs;return true;
 }
 }
@@ -60,6 +106,14 @@ bool BloodRender::Draw(ID3D11Device* device,ID3D11DeviceContext* context,const P
  UINT stride=sizeof(Blood::WorldVertex),offset=0;ID3D11Buffer* buffer=vertices.Get();context->IASetVertexBuffers(0,1,&buffer,&stride,&offset);
  context->IASetInputLayout(layout.Get());context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
  context->VSSetShader(vs.Get(),nullptr,0);context->PSSetShader(ps.Get(),nullptr,0);context->GSSetShader(nullptr,nullptr,0);
+ ComPtr<ID3D11ShaderResourceView> previousMask;
+ ComPtr<ID3D11SamplerState> previousSampler;
+ context->PSGetShaderResources(15,1,&previousMask);
+ context->PSGetSamplers(15,1,&previousSampler);
+ ID3D11ShaderResourceView* maskView=masks.Get();
+ ID3D11SamplerState* sampler=maskSampler.Get();
+ context->PSSetShaderResources(15,1,&maskView);
+ context->PSSetSamplers(15,1,&sampler);
  context->RSSetState(raster.Get());context->OMSetBlendState(blend.Get(),nullptr,0xffffffff);context->OMSetDepthStencilState(depth.Get(),0);
  static std::array<ComPtr<ID3D11Query>,4> diagQueries;static bool pending[4]{};static unsigned nextQuery=0;int query=-1;
  static std::array<ComPtr<ID3D11Query>,8> decalQueries;static bool decalPending[8]{};static uint64_t lastDecalProbe=0;
@@ -119,6 +173,9 @@ if(BloodDiag::On()){
  }
 }
 
+ maskView=previousMask.Get();sampler=previousSampler.Get();
+ context->PSSetShaderResources(15,1,&maskView);
+ context->PSSetSamplers(15,1,&sampler);
  // Native shaders fetch vertices through SRVs and use no input layout.
  context->IASetInputLayout(nullptr);buffer=nullptr;context->IASetVertexBuffers(0,1,&buffer,&stride,&offset);
  return true;

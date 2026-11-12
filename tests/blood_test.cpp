@@ -108,16 +108,18 @@ int main(){
     for(int i=0;i<12;i++)classicSeed=classicSeed*1664525u+1013904223u;
     const bool streak=((classicSeed^uint32_t(d.order*0x9e3779b9u))&7u)==0;
     streaks+=streak;
+    CHECK(d.maskLayer==(streak?2u:1u));
     classicSeed=seed;
     for(int i=0;i<12;i++){
      const V a=d.variedOffsets[i],b=d.variedOffsets[(i+1)%12];
-     CHECK(Finite(a)&&Dot(a,a)>=(streak?.065f:.26f)&&Dot(a,a)<=1.001f&&std::fabs(Dot(a,d.n))<.0001f);
+     CHECK(Finite(a)&&Dot(a,a)>=.49f&&Dot(a,a)<=1.001f&&std::fabs(Dot(a,d.n))<.0001f);
      CHECK(Dot(Cross(a,b),d.n)>.04f);
      auto side=[&](V x,V y,V z){return Dot(Cross(y-x,z-x),d.n);};
      for(int j=i+2;j<12;j++){
       if(i==0&&j==11)continue;
       V c=d.variedOffsets[j],e=d.variedOffsets[(j+1)%12];
-      CHECK(!(side(a,b,c)*side(a,b,e)<0&&side(c,e,a)*side(c,e,b)<0));
+      auto opposite=[](float x,float y){return (x>1e-6f&&y< -1e-6f)||(y>1e-6f&&x< -1e-6f);};
+      CHECK(!(opposite(side(a,b,c),side(a,b,e))&&opposite(side(c,e,a),side(c,e,b))));
      }
      classicSeed=classicSeed*1664525u+1013904223u;
      const float radius=.65f+(classicSeed&255)/255.0f*.35f;
@@ -131,12 +133,12 @@ int main(){
   CHECK(Dot(decals[0].variedOffsets[0]-decals[1].variedOffsets[0],decals[0].variedOffsets[0]-decals[1].variedOffsets[0])>.0001f);
   camera.valid=true;
   std::array<Blood::WorldVertex,36> varied{},again{},classic{};
-  CHECK(Blood::BuildWorld(varied.data(),36)==36);
+  CHECK(Blood::BuildWorld(varied.data(),36)==36&&varied[0].mask==MaskVertex(128,128,decals[0].maskLayer));
   camera.eye={5,7,9};
   CHECK(Blood::BuildWorld(again.data(),36)==36&&memcmp(varied.data(),again.data(),sizeof varied)==0);
   shape.stainVariation=false;Blood::Configure(shape);
   CHECK(Blood::DetectPreset(shape)==Blood::Preset::Brutal);
-  CHECK(Blood::BuildWorld(classic.data(),36)==36&&memcmp(varied.data(),classic.data(),sizeof varied)!=0);
+  CHECK(Blood::BuildWorld(classic.data(),36)==36&&(classic[0].mask>>16)==0&&memcmp(varied.data(),classic.data(),sizeof varied)!=0);
   shape.stainVariation=true;Blood::Configure(shape);
   CHECK(Blood::BuildWorld(again.data(),36)==36&&memcmp(varied.data(),again.data(),sizeof varied)==0);
   CHECK(Blood::BuildWorld(again.data(),35)==0);
