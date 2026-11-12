@@ -342,7 +342,21 @@ void Select(PPCContext& ctx,uint8_t* base,const Target& t,int row) {
     }
 }
 void Dispatch(PPCContext& ctx,uint8_t* base,const Target& t,uint32_t action) {
+    constexpr uint32_t RestartCheckpointYes=0x824EE5F0;
+    const bool checkpointYes=action==64&&t.modal&&t.ready&&
+        Guest::Read16(base,t.menu+34)==0&&Guest::Read32(base,t.menu+60)==RestartCheckpointYes;
     Call(ctx,base,0x824C48B8,t.system,action,t.local);
+    if(!checkpointYes) return;
+
+    // Mouse dispatch runs after the native UI tick. Restart Checkpoint
+    // queues its reload before that tick can finish the dialog close.
+    // Complete the pending close for this same dialog with the routine
+    // its native presentation update normally calls.
+    const Target after=Resolve(base);
+    if(after.modal&&after.system==t.system&&after.menu==t.menu&&
+       after.presentation==t.presentation&&after.local==t.local&&
+       after.revision==t.revision&&Guest::Read8(base,t.presentation+64)==1)
+        Call(ctx,base,0x824CE230,t.system,0);
 }
 void Adjust(PPCContext& ctx,uint8_t* base,const Target& t,int row,int x,int y) {
     Control control;RECT client{};MenuPointer::Point point;

@@ -30,6 +30,13 @@ PPC_FUNC_IMPL(__imp__sub_824C48B8) {}
 static uint32_t next=0x40010000;
 static int confirms=0,backs=0,steps=0;
 static uint32_t lastAction=0;
+static uint32_t closingPresentation=0;
+static int finishedCloses=0;
+PPC_FUNC_IMPL(FakeFinishClose) {
+    ++finishedCloses;
+    Guest::Write32(base,ctx.r3.u32+12,0xFFFFFFFF);
+    Guest::Write8(base,closingPresentation+64,0);
+}
 static uint32_t lastSystem=0,lastLocal=0,sliderValueAddress=0;
 static void Commit(uint64_t offset,size_t size) {
     uint64_t start=offset&~uint64_t(4095),end=(offset+size+4095)&~uint64_t(4095);
@@ -57,7 +64,10 @@ PPC_FUNC_IMPL(FakeAddQuit) { auto p=ctx.r3.u32; auto n=Guest::Read32(base,p+56);
 PPC_FUNC_IMPL(FakeConfirmQuit) { sub_824CDD78(ctx,base); }
 PPC_FUNC_IMPL(FakeDispatch) {
     lastSystem=ctx.r3.u32;lastLocal=ctx.r5.u32;lastAction=ctx.r4.u32;
-    if(ctx.r4.u32==64) ++confirms;
+    if(ctx.r4.u32==64) {
+        ++confirms;
+        if(closingPresentation) Guest::Write8(base,closingPresentation+64,1);
+    }
     else if(ctx.r4.u32==128) ++backs;
     else { assert(ctx.r4.u32==16||ctx.r4.u32==32);++steps;
         if(sliderValueAddress) W(sliderValueAddress,uint32_t(int(Guest::Read32(base,sliderValueAddress))+(ctx.r4.u32==32?1:-1)));
@@ -103,6 +113,23 @@ int main() {
     auto dummy=Guest::Read32(Guest::Base,Guest::Read32(Guest::Base,modalMenu+4)+4);B(dummy+22,1);Click(620,310);assert(confirms==1);B(dummy+22,0);
     NativeMenuPointer::Button(false,true,420,310);Update(context,Guest::Base);
     sub_824CDB28(context,Guest::Base);Update(context,Guest::Base);NativeMenuPointer::Button(false,false,420,310);Update(context,Guest::Base);assert(confirms==1);
+    // Only a checkpoint Yes whose native dispatcher requested a close is
+    // completed immediately. No/Back and other Yes callbacks keep native timing.
+    Bind(0x824CE230,FakeFinishClose);
+    auto dispatchModal=[&](uint32_t callback,int row,uint32_t action,bool closing) {
+        W(modal+12,0);B(pres+64,0);
+        W(modalMenu+60,callback);H(modalMenu+34,uint16_t(row));
+        closingPresentation=closing?pres:0;
+        Dispatch(context,Guest::Base,Resolve(Guest::Base),action);
+    };
+    dispatchModal(0x824EE5F0,1,64,true);assert(finishedCloses==0);
+    dispatchModal(0x824EE5F0,0,128,false);assert(finishedCloses==0);
+    dispatchModal(0x824EE5F0,0,64,false);assert(finishedCloses==0);
+    dispatchModal(0x824EC048,0,64,true);assert(finishedCloses==0); // Restart Level
+    dispatchModal(0x824DC798,0,64,true);assert(finishedCloses==0); // Quit Mission
+    dispatchModal(0x824EE5F0,0,64,true);assert(finishedCloses==1&&!Resolve(Guest::Base).modal);
+    dispatchModal(0x824EE5F0,0,64,true);assert(finishedCloses==2&&!Resolve(Guest::Base).modal);
+    closingPresentation=0;
     W(modal+12,0xFFFFFFFF);assert(!Resolve(Guest::Base).modal);
     // Pause uses its own system and routes native action arguments correctly.
     B(front+28,0);auto pauseMenu=MakeMenu(0x82071A3C,7),pause=MakeSystem(pauseMenu,0);W(Manager+32,pause);ResetPointer();Click(110,67);assert(confirms==1&&lastSystem==pause&&lastLocal==0);
