@@ -2,7 +2,6 @@
 #include "button_prompts.h"
 #include "kernel.h"
 #include "input.h"
-#include "input.h"
 #include "settings.h"
 #include "overlay.h"
 #include <Windows.h>
@@ -107,7 +106,7 @@ std::string PlainText(const std::string& text) {
 }
 void Measure(PPCContext& ctx,uint8_t* base,Function original) {
     const bool icons=IconFont(base,ctx.r3.u32);
-    if(!icons && keyboard.load() && ctx.r4.u32>=0x10000 && (base[ctx.r4.u32]=='P' || base[ctx.r4.u32]=='U' || base[ctx.r4.u32]=='Q' || base[ctx.r4.u32]=='Q' || base[ctx.r4.u32]=='Q')) {
+    if(!icons && ButtonPrompts::KeyboardActive() && ctx.r4.u32>=0x10000 && (base[ctx.r4.u32]=='P' || base[ctx.r4.u32]=='U' || base[ctx.r4.u32]=='Q' || base[ctx.r4.u32]=='Q' || base[ctx.r4.u32]=='Q')) {
         const auto replacement=PlainText(Text(base,ctx.r4.u32));
         if(!replacement.empty()) { const uint32_t scratch=Scratch(base,replacement);if(scratch) ctx.r4.u32=scratch; }
     }
@@ -120,7 +119,7 @@ void Draw(PPCContext& ctx,uint8_t* base,Function original) {
         if(!taken && GetTickCount64()-start>=ULONGLONG(atof(shot)*1000)) { taken=true;Overlay::RequestScreenshot(); }
     }
     const bool icons=IconFont(base,ctx.r3.u32);
-    if(!keyboard.load(std::memory_order_relaxed)) { original(ctx,base);return; }
+    if(!ButtonPrompts::KeyboardActive()) { original(ctx,base);return; }
     const uint32_t font=regularFont.load(std::memory_order_relaxed);
     if(!icons && (ctx.r4.u32<0x10000 || (base[ctx.r4.u32]!='P' && base[ctx.r4.u32]!='U' && base[ctx.r4.u32]!='Q' && base[ctx.r4.u32]!='Q' && base[ctx.r4.u32]!='Q'))) { original(ctx,base);return; }
     std::string text=Text(base,ctx.r4.u32),replacement;
@@ -184,7 +183,10 @@ void Sheet(PPCContext& ctx,uint8_t* base,Function original) {
 }
 void ButtonPrompts::KeyboardUsed() { keyboard.store(true,std::memory_order_relaxed); }
 void ButtonPrompts::ControllerUsed() { keyboard.store(false,std::memory_order_relaxed); }
-bool ButtonPrompts::KeyboardActive() { return keyboard.load(std::memory_order_relaxed); }
+bool ButtonPrompts::KeyboardActive() {
+    const int chosen = Settings::Get().buttonPrompts;
+    return chosen == 2 || (chosen == 0 && keyboard.load(std::memory_order_relaxed));
+}
 std::string ButtonPrompts::ActionKey(Settings::Action action) { return "["+Key(Settings::Get().keys[action])+"]"; }
 
 #ifndef BUTTON_PROMPTS_UNIT_TEST
