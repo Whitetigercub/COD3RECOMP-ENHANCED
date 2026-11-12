@@ -65,6 +65,21 @@ Forest index-buffer handling dropped from roughly **38.5 µs to 0.12 µs per dra
 
 **If a fresh installation runs at unexpectedly low FPS, check F11 → Watch memory writes before assuming the renderer is broken.** Texture-pool optimisation was also different between installations, but the decisive comparison changed only memory-write tracking.
 
+## Blood & Gore presets
+
+Open **F11 → Gameplay → Blood & Gore** in the campaign and choose a **Blood Preset**.
+
+| Preset | Blood amount | Particle density | Decal lifetime | Max decals | Splat size | Cloud size | Cloud opacity |
+| --- | ---: | --- | --- | ---: | ---: | ---: | ---: |
+| MINIMAL | 50% | Low | 12 seconds | 24 | 0.75× | 0.75× | 0.75× |
+| NORMAL | 80% | Medium | 30 seconds | 64 | 1.00× | 1.00× | 1.00× |
+| ENHANCED | 120% | High | 90 seconds | 256 | 1.15× | 1.15× | 1.10× |
+| BRUTAL | 200% | Ultra | Permanent | 4,096 | 1.40× | 1.50× | 1.35× |
+
+All four presets enable blood, decals, and blood physics and use the same blood color (RGB 0.30, 0.018, 0.012). Permanent decals still count toward the decal limit.
+
+The manual sliders and toggles remain available. The selector shows **Custom** whenever the current values differ from all four presets. Choosing **Custom** leaves the current values in place. Opening the menu keeps your saved values, and choosing a named preset applies its values immediately. Preset choices and manual edits save the resulting values automatically.
+
 ## Blood decals: the disappearing-blood incident
 
 Earlier versions exhibited intermittent disappearing blood, most notoriously on **Chambois**. Extensive diagnostics confirmed that blood could be generated and drawn, but they never established a definitive renderer root cause. Earlier plans for a full renderer redesign and a campaign-wide blood survey are **no longer active work items**.
