@@ -790,6 +790,12 @@ namespace
 #ifndef COD3_MP
                 if (ImGui::BeginTabItem("Gameplay"))
                 {
+                    const char* walkSpeeds[] = {"Normal", "Fast (+20%)", "Faster (+40%)"};
+                    int walkSpeed = g_edit.walkSpeedBonus / 20;
+                    if (ImGui::Combo("Walk Speed", &walkSpeed, walkSpeeds, IM_ARRAYSIZE(walkSpeeds)))
+                        g_edit.walkSpeedBonus = walkSpeed * 20;
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Standing, hip-fire movement on foot in the solo campaign.");
                     ImGui::Checkbox("Improved sprint stamina (solo campaign)", &g_edit.improvedSprintStamina);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Sprint three times as long and refill stamina 40%% faster. The recovery delay still applies.");
