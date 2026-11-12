@@ -67,6 +67,7 @@ set(COD3_HOST_SOURCES
     "hitmarkers.cpp"
     "blood.cpp"
     "blood_render.cpp"
+    "enemy_wounds.cpp"
     "blood_native.cpp"
     "settings.cpp"
     "overlay.cpp"

@@ -13,6 +13,7 @@ using Microsoft::WRL::ComPtr;
 static uint32_t color=0xff0000ff;static float z=.5f;static bool show=true;
 static unsigned maskMode=0;
 static uint32_t UV(unsigned u,unsigned v,unsigned layer){return u|(v<<8)|(layer<<16);}
+namespace EnemyWounds { int Append(Blood::WorldVertex*, int) { return 0; } }
 int Blood::BuildWorld(WorldVertex* out,int){
  if(!show)return 0;
  if(maskMode){
