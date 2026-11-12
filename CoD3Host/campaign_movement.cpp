@@ -35,11 +35,11 @@ PPC_FUNC(sub_82478358)
 {
     // The ground-walk caller has finished computing the desired speed in f1.
     // Other callers accelerate in air, on ladders and in special movement modes.
-    if (ctx.lr == GroundWalkReturn && ctx.f1.f64 > 0.0 &&
-        Settings::FastWalkSpeed() && Coop::GetMode() == Coop::Mode::Off &&
-        IsNormalWalk(base))
+    if (ctx.lr == GroundWalkReturn && ctx.f1.f64 > 0.0)
     {
-        ctx.f1.f64 = static_cast<float>(ctx.f1.f64 * 1.20);
+        const int multiplier = Settings::WalkSpeedMultiplier();
+        if (multiplier > 1 && Coop::GetMode() == Coop::Mode::Off && IsNormalWalk(base))
+            ctx.f1.f64 = static_cast<float>(ctx.f1.f64 * multiplier);
     }
 
     __imp__sub_82478358(ctx, base);

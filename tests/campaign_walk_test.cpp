@@ -9,7 +9,7 @@ namespace
 {
     constexpr uint32_t Move = 0x1000;
     constexpr uint32_t State = 0x2000;
-    bool fast = true;
+    int multiplier = 1;
     Coop::Mode coop = Coop::Mode::Off;
     unsigned nativeCalls = 0;
     double nativeSpeed = 0;
@@ -32,7 +32,7 @@ namespace
     }
 }
 
-bool Settings::FastWalkSpeed() { return fast; }
+int Settings::WalkSpeedMultiplier() { return multiplier; }
 Coop::Mode Coop::GetMode() { return coop; }
 PPC_FUNC_IMPL(__imp__sub_82478358)
 {
@@ -52,14 +52,16 @@ int main()
     Guest::Write32(base, Move, State);
     Guest::Write32(base, State + 184, 66);
 
-    CheckSpeed(base, GroundWalkReturn, 228.0);
-    Guest::Write32(base, State + 44, 0x40);  // Backwards.
-    CheckSpeed(base, GroundWalkReturn, 228.0);
-    Guest::Write32(base, State + 44, 0);
-
-    fast = false;
     CheckSpeed(base, GroundWalkReturn, 190.0);
-    fast = true;
+    multiplier = 2;
+    CheckSpeed(base, GroundWalkReturn, 380.0);
+    multiplier = 3;
+    CheckSpeed(base, GroundWalkReturn, 570.0);
+    multiplier = 4;
+    CheckSpeed(base, GroundWalkReturn, 760.0);
+    Guest::Write32(base, State + 44, 0x40);  // Backwards.
+    CheckSpeed(base, GroundWalkReturn, 760.0);
+    Guest::Write32(base, State + 44, 0);
     coop = Coop::Mode::Host;
     CheckSpeed(base, GroundWalkReturn, 190.0);
     coop = Coop::Mode::Off;
