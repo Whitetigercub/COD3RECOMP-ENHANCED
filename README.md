@@ -3,7 +3,7 @@
 
 **Call of Duty 3 (Xbox 360) on PC, with the fixes and improvements I want.**
 
-This is my enhanced fork of CoD3Recomp, based on upstream **0.5.424**. My main focus is the **single-player campaign**: fixing annoyances and adding a few modern touches.
+This is my enhanced fork of CoD3Recomp, now integrated with upstream **v0.5.851** ([PR #2](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/2), merged November 12, 2026). My main focus is the **single-player campaign**: fixing annoyances and adding a few modern touches.
 
 The game itself is **NOT INCLUDED**. You need your own Xbox 360 version of Call of Duty 3. Legal shit, I know.
 
@@ -13,7 +13,7 @@ If you want the technical write-up, [here's the formal README](docs/README-FORMA
 
 **[FrankHUN88453/CoD3Recomp](https://github.com/FrankHUN88453/CoD3Recomp) - [hovg-N8/CoD3Recomp](https://github.com/hovg-N8/CoD3Recomp) - [my fork](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED)**
 
-Frank started the recompilation project and PC renderer. hovg-N8 built extensively on top of it through 0.5.424. I didn't make their work and I'm not going to pretend I did.
+Frank started the recompilation project and PC renderer. hovg-N8 built extensively on top of it, including upstream v0.5.851 now integrated here. I didn't make their work and I'm not going to pretend I did.
 
 The upstream project already has major campaign improvements, multiplayer features, bots, killstreaks, HDR options, performance changes, and more. **Those are NOT my additions.**
 
@@ -30,7 +30,7 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
   - **Small limitation:** The quit confirmation is available from the main menu, not the initial **PRESS ENTER** screen. Press Enter to reach the menu before using Esc to quit.
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**, because throwing away the whole clip behavior every time wasn't what I wanted.
-- Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore. **CURRENTLY UNSTABLE.**
+- Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore. **Recent hands-on tests report persistent blood on The Island and previously problematic Chambois; this does not establish that every map/checkpoint scenario passes.**
 - Added experimental blood-decal projection filtering and rendering diagnostics.
 
 ## Known menu bugs — still need fixing
@@ -45,74 +45,55 @@ The brightness and sensitivity issues remain open. The crossed-out title-gateway
 
 See the [menu preview status](docs/MENU-POINTER-PREVIEW.md) and [bug log with reproduction/source leads](docs/MENU-SLIDER-BUGS.md). The slider fixes are deferred for a small follow-up patch.
 
-## KNOWN ISSUE: blood decals sometimes disappear
+## November 2026 update: upstream integration and performance
 
-The experimental blood decals remain **unreliable**. Sometimes they're visible, sometimes they disappear. The exact cause is **STILL UNKNOWN**.
+Upstream **v0.5.851** was integrated into `main` through [PR #2](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/2). Merge commit: `a3df8f01261314ed3c1a997e648d9809e0274a50`; vetted integration head: `d5503e31a5b6a67deafd35604bf02419a8da4bb4`. The fork's custom menu pointer owns the campaign screens it recognizes (including the native quit confirmation), while upstream handles the others. Ownership transitions clear pending clicks. The integration also preserves the custom hitmarkers, partial M1 Garand reload, experimental blood effects and diagnostics, keyboard prompts, and existing weapon-setting IDs.
 
-Here's what we actually know: real decals have been generated, and visible pixel writes have been confirmed. In a separate diagnostic build, a **synthetic test decal stayed visible for over three minutes**. The frozen source/copy depth coverage matched at **740/740 samples**, with **156 diagnostic checks and 27 normal-renderer checks passed**.
+The original, working pre-integration fork is **still backed up** on GitHub: [`backup/main-before-upstream-20261112`](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/tree/backup/main-before-upstream-20261112) at commit `b22188d5067f4ec8e52bcc8e65540bb173da8eaf`. This backup is based on upstream 0.5.424 and must be retained.
 
-I've also seen blood stay on the ground after reloading a checkpoint. Nice, but **that does NOT mean the bug is fixed**.
+Both Windows Release executables built successfully with FFmpeg enabled, and **19 automated checks passed**. Those checks cover native pointer handling, prompts, hitmarkers, blood simulation/GPU rendering, and weapon-setting compatibility. They are not a substitute for live testing of every menu, multiplayer, or gameplay path. There were no GitHub check runs attached to the PR.
 
-In live rendering, normal depth testing has rejected some decal coverage while depth-disabled rendering showed coverage. That could be legitimate occlusion. It is **not proof** that depth testing is broken.
+### The 6–15 FPS playtest issue: configuration, not a demonstrated merge regression
 
-**Current suspects, NOT confirmed causes:** depth or camera-projection mismatch, depth-buffer timing, later render passes covering the blood, first-person weapon/foreground layering, resource-state issues, or MSAA interactions.
+A separate clean playtest installation initially ran Forest and The Island at extremely low frame rates. Controlled comparisons using the same warmed `d5503e3` executable and graphics settings isolated the dominant cause to **`watch_writes = 0`** (Watch memory writes disabled) in that playtest's INI. The original installation had memory-write tracking enabled. Enabling **Watch memory writes** restored the tested maps to **60 FPS**, without changing renderer code or other graphics settings.
 
-### Update: live blood comparison finished (November 2026)
+| Campaign map | Watch memory writes OFF | Watch memory writes ON |
+| --- | ---: | ---: |
+| Forest | 9.8 median FPS | 60.0 median FPS |
+| The Island | 14.4 median FPS | 60.0 median FPS |
 
-Sol ran the same-frame comparison. **24 paired frames** were captured with matching fixture/projection hashes, and every measured draw call succeeded. **Seven frames had TWO blood insertions**, so counting each actual draw matters.
+Forest index-buffer handling dropped from roughly **38.5 µs to 0.12 µs per draw** in the controlled comparison. The old fork (`b22188d`) and stock upstream also reproduced severe slowdowns with memory tracking disabled, so the tests did **not** identify the integration as the cause. The playtest INI was backed up, then only `watch_writes = 1` was restored. The user subsequently confirmed the integrated build was playable at 60 FPS.
 
-For **five consecutive live frames**, the test stain passed **317 normal-depth and 317 depth-disabled samples** at both the early and late checks, and **102 RGB pixels actually changed** in each frame. In other words, blood *can* draw correctly and stay there through the sampled rendering stages.
+**If a fresh installation runs at unexpectedly low FPS, check F11 → Watch memory writes before assuming the renderer is broken.** Texture-pool optimisation was also different between installations, but the decisive comparison changed only memory-write tracking.
 
-Other samples failed the **initial depth test** even though depth-disabled coverage was positive. That's a real observation, but **it does NOT prove the rejection was wrong**. Some captures involved foreground overlap or the Mission Failed screen, so those aren't evidence of blood mysteriously vanishing during normal gameplay.
+## Blood decals: the disappearing-blood incident
 
-The game sometimes copies the scene to a separate texture for display. Sol checked that the changed pixels fell inside the copied region and matched the selected presentation texture. **No later pass erasing blood was proven.**
+Earlier versions exhibited intermittent disappearing blood, most notoriously on **Chambois**. Extensive diagnostics confirmed that blood could be generated and drawn, but they never established a definitive renderer root cause. Earlier plans for a full renderer redesign and a campaign-wide blood survey are **no longer active work items**.
 
-The latest comparison build passed **168 diagnostic checks**, the developer-mode opt-out check, and **27 normal-renderer checks**. The installed executable/settings weren't changed. **The comparison code and patch are still local/archived, not committed or pushed to GitHub yet.**
+Following the v0.5.851 integration and correction of the separate playtest's `watch_writes` setting, the user reported that blood **remained visible on the ground on The Island and Chambois**, including the formerly problematic Chambois case. That is a meaningful hands-on success and the historical bug is considered **resolved in those observed sessions**, without a blood renderer rewrite.
 
-### Update: controlled campaign blood test (November 2026)
+**Scope of verification:** Persistence across every campaign map, both Permanent Decals settings, and all checkpoint/reload conditions has **not** been established. Do not misrepresent passing synthetic tests or individual maps as a universal guarantee. If a reproducible regression returns, collect the specific map, settings, and steps before reopening renderer diagnostics.
 
-Phase 1 captured a real player hit producing **13 ground decals** during approximately **195 seconds** of gameplay. All **36 capture sets** showed blood drawing, with no logged decal deletion and a prominent stain remaining visible in sampled final images. The camera moved and the captures were spaced apart, so brief disappearances remain possible. **The original disappearing-blood bug was not reproduced and remains unresolved.**
+The existing experimental blood simulation, visuals and diagnostics remain in the fork. Further speculative renderer rewrites are **on hold**.
 
-An isolated Phase 2 gray-surface prototype is being explored separately. It is not a finished standalone room or a verified fix. Neither test package has been merged into this branch.
+## Roadmap (planned, not implemented)
 
-**The actual bug is STILL UNSOLVED.** The earlier proposed campaign-map comparison is now deferred in favor of the architecture reassessment described below.
+### Wave Defense vertical slice
 
-## Blood renderer: architecture reassessment (planned, on hold)
+A standalone single-player wave-survival mode is planned, reusing existing campaign systems where possible. **For the vertical slice, launch and map selection will live in the F11 overlay**, not a new native main-menu BONUS MODES entry. The first playable target is one suitable map, five hostile soldiers to start, basic wave/kill tracking, and a wave HUD.
 
-The experimental blood decals are **disabled by default**, and their intermittent disappearance remains **unresolved**. A read-only, source-based review found that the hit/droplet/decal simulation appears broadly reasonable, but the rendering integration relies on **draw-order heuristics** and selecting a projection matrix from shader constants on a qualifying draw. These are **potential architectural weaknesses, not confirmed causes** of the missing stains. Previous synthetic and controlled tests showed decals can render, but did not establish reliable insertion during normal campaign rendering.
+Claude's read-only feasibility audit found existing host-side soldier spawning, entity tracking, overlay/HUD, and campaign map-loading mechanisms. **Repeated hostile Axis spawning, independent AI behavior, level-script isolation, and protection of normal campaign checkpoints/saves remain unproven or high-risk.** Do not present the mode as playable yet. A proper main-menu BONUS MODES entry can be revisited later.
 
-**Next step, only when development resumes:** Have Sol independently inspect the actual code and rendering pipeline from first principles. Verify the guest trace calling convention, the view/projection source, depth state, and where world draws and in-game decals occur. Propose a deterministic rendering strategy, with a clear explanation of what can be safely reused from the existing simulation, **before implementing changes**. If a redesign is approved, validate it on representative campaign maps with a bounded test plan. If it remains unreliable, keep the effect off and shelve it rather than repeating endless diagnostics.
+### BRUTAL COD3 ideas (future exploration only)
 
-**Mandatory multi-map acceptance test:** No blood-renderer fix can be considered verified from a single map, synthetic test, frozen scene, or successful draw call alone. Before calling it fixed, test normal gameplay on **multiple single-player campaign maps**, including **Chambois** (confirmed disappearing-blood case) and **Forest** (preliminary comparison), plus maps with different terrain and surfaces. Use real gunfire, camera movement, and both **Permanent decals ON and OFF**. Track individual stains and distinguish unexpected disappearance from intended expiration, fading, occlusion, or FIFO pool replacement. If Chambois still fails, the fix is **not verified**, regardless of passing diagnostic checks.
+**None of the following are implemented or approved for immediate engineering work.** They are concepts to evaluate *after* existing integration checks and Wave Defense priorities:
 
-**No campaign-wide blood survey or further diagnostic run is currently required.** The plans below are retained as historical investigation notes, not active instructions.
+- **Always Ragdoll on Death:** First audit whether the original engine provides usable ragdoll/death physics. Do not assume a built-in capability or commit to a custom physics rewrite.
+- **Expanded gore:** More responsive blood sprays, directional hit effects, additional wound/environmental effects, with performance and visual checks.
+- **Dismemberment:** A much later possibility, potentially requiring character mesh, animation and gameplay changes.
+- **Movement/combat experiments:** Slide and boot-kick mechanics, subject to separate feasibility and gameplay review.
 
-## Archived plan: campaign-wide blood survey (formerly Plan C)
-
-The earlier, now-deferred proposal was to test **every available single-player campaign map twice**:
-
-1. **Permanent decals OFF:** use normal decal lifetime/fading and observe whether blood disappears.
-2. **Permanent decals ON:** disable lifetime expiry and observe whether blood still disappears.
-
-Keep the decal pool at **4,096** for comparable runs where the setting is available. Permanent ON disables expiry, but it does **not** prevent FIFO pool replacement, so record any pool-replacement events separately.
-
-For every run, record the map, Permanent setting, whether a real player hit created custom decals, whether/when the same stain disappeared, and any lifetime or pool-replacement log entries. Keep screenshots and the complete run log. Use the same kind of unobstructed surface and a steady view where practical. If a map cannot be loaded or a run is inconclusive, mark it as such rather than counting it as a pass.
-
-**Chambois is the known-bug map.** This is where the disappearing-blood problem has been observed, and it must be treated as a confirmed problem area rather than a neutral control map.
-
-**Forest has behaved normally so far:** the blood remained visible during the recent test. This is preliminary, not a clean bill of health; Forest needs closer and repeated testing, including both Permanent-decals settings.
-
-The remaining campaign maps still need the same ON/OFF comparison. The purpose of this survey is to establish whether Chambois is uniquely affected or whether other maps also reproduce the problem.
-
-## Plan B: gray testing surface (on hold)
-
-A developer-only gray-surface prototype using existing campaign geometry has been explored, but the first live version produced corrupted visuals and no usable weapon/fire input. A later repair removed the broad shader override and uses a small manually placed ground patch; its placement and equivalence still need live verification. Keep this plan on hold until the campaign-wide ON/OFF survey gives us a reason to resume it.
-
-## Plan A: targeted renderer investigation (on hold)
-
-Return to targeted renderer diagnostics or fixes only after the map survey provides evidence pointing to a shared rendering issue or a specific map-dependent path. Do not treat a synthetic/frozen decal test as proof that real gameplay decals cannot disappear.
-
-For now, if the blood effects bother you, disable them in **F11 - Gameplay - Blood & Gore**.
+The BRUTAL COD3 name is a possible future direction, **not a claim that these features ship today**.
 
 ## Building this thing (Windows)
 
