@@ -17,7 +17,9 @@
 #ifndef COD3_MP
 
 #include "sprint.h"
+#include "coop.h"
 #include "kernel.h"
+#include "settings.h"
 
 #include <Windows.h>
 
@@ -39,6 +41,20 @@ namespace
     std::mutex g_mutex;
     bool g_on = false;
     bool Off() { static const bool off = getenv("COD3_NOREALSPRINT") != nullptr; return off; }
+}
+
+// These hooks run at the native stamina update, with f0 holding the rate
+// just before the game multiplies it by the elapsed simulation time.
+void ScaleCampaignSprintDrain(PPCRegister& rate)
+{
+    if (!Off() && Settings::ImprovedSprintStamina() && Coop::GetMode() == Coop::Mode::Off)
+        rate.f64 /= 1.35;
+}
+
+void ScaleCampaignSprintRecharge(PPCRegister& rate)
+{
+    if (!Off() && Settings::ImprovedSprintStamina() && Coop::GetMode() == Coop::Mode::Off)
+        rate.f64 *= 1.40;
 }
 
 // +sprint, as the multiplayer's: the arguments moved on by one and the

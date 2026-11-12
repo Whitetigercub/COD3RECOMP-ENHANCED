@@ -145,3 +145,15 @@ functions = [
 invalid_instructions = [
     { data = 0x00000000, size = 4 }, # padding
 ]
+
+# sub_82477F28: scale the drain and recharge rates before their multiply-add.
+# The native start delay, clamp, and exhaustion flag transitions stay in place.
+[[midasm_hook]]
+address = 0x82477FB8
+name = "ScaleCampaignSprintDrain"
+registers = ["f0"]
+
+[[midasm_hook]]
+address = 0x824780A8
+name = "ScaleCampaignSprintRecharge"
+registers = ["f0"]
