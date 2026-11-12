@@ -3,6 +3,9 @@ extern void BloodDiagnosticEye(float* eye);
 #include "blood_render.h"
 #include "blood.h"
 #include "blood_mask.h"
+#ifndef COD3_MP
+#include "enemy_wounds.h"
+#endif
 #include <Windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -20,7 +23,11 @@ ComPtr<ID3D11Buffer> vertices,constants;ComPtr<ID3D11InputLayout> layout;
 ComPtr<ID3D11BlendState> blend;ComPtr<ID3D11DepthStencilState> depth;ComPtr<ID3D11RasterizerState> raster;
 ComPtr<ID3D11ShaderResourceView> masks;
 ComPtr<ID3D11SamplerState> maskSampler;
+#ifdef COD3_MP
 constexpr int Capacity=Blood::MaxVertices;
+#else
+constexpr int Capacity=Blood::MaxVertices+EnemyWounds::MaxVertices;
+#endif
 
 bool CreateMasks(ID3D11Device* device){
  using namespace BloodMask;
@@ -96,7 +103,11 @@ bool Initialize(ID3D11Device* device){
 }
 bool BloodRender::Draw(ID3D11Device* device,ID3D11DeviceContext* context,const Projection& projection){
  static thread_local std::array<Blood::WorldVertex,Capacity> data;
- int count=Blood::BuildWorld(data.data(),Capacity);if(!count||!Initialize(device))return false;
+ int count=Blood::BuildWorld(data.data(),Blood::MaxVertices);
+#ifndef COD3_MP
+ count+=EnemyWounds::Append(data.data()+count,Capacity-count);
+#endif
+ if(!count||!Initialize(device))return false;
  D3D11_MAPPED_SUBRESOURCE map{};
  if(FAILED(context->Map(vertices.Get(),0,D3D11_MAP_WRITE_DISCARD,0,&map)))return false;
  memcpy(map.pData,data.data(),count*sizeof(data[0]));context->Unmap(vertices.Get(),0);

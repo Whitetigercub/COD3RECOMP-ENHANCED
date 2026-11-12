@@ -20,6 +20,7 @@
 #include "input.h"
 #include "settings.h"
 #include "blood.h"
+#include "enemy_wounds.h"
 #include "heap_trace.h"
 
 #include <winsock2.h>
@@ -460,8 +461,10 @@ extern "C" PPC_FUNC(__imp__sub_82518518);
 PPC_FUNC(sub_82518518)
 {
     Blood::Clear();
+    EnemyWounds::Clear();
     __imp__sub_82518518(ctx,base);
     Blood::Clear();
+    EnemyWounds::Clear();
 }
 
 using namespace Coop;
@@ -615,6 +618,7 @@ PPC_FUNC(sub_82535E80)
     HeapTrace::SetGuard(GetMode() == Mode::Join);   // (v45k)
     NativeOptionsPoll(base);
     Blood::Update(ctx, base);
+    EnemyWounds::Update(ctx, base);
     SprintPoll(base);
     Shots();
     LobbyFrame(ctx, base);
@@ -690,6 +694,7 @@ PPC_FUNC(sub_82518E40)
 PPC_FUNC(sub_82517A00)
 {
     Blood::Clear();
+    EnemyWounds::Clear();
     if (GetMode() != Mode::Off && ctx.r3.u32)
     {
         std::string name = Text(base, ctx.r3.u32, 63);

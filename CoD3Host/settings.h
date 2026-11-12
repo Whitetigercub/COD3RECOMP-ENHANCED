@@ -195,6 +195,7 @@ namespace Settings
         Blood::Options blood;
         bool improvedSprintStamina = false;
         int walkSpeedBonus = 0;
+        bool enemyWounds = false;
         bool hitmarkers = true;
         bool hitmarkerSound = true;
         bool hitmarkerRedKill = true;
@@ -224,6 +225,7 @@ namespace Settings
     Values Get();
     bool ImprovedSprintStamina();
     int WalkSpeedBonus();
+    bool EnemyWoundsEnabled();
     void Set(const Values& values);
     // Setting them without saving, for a slider dragged in the menu (the
     // HDR tabs apply as they move); Save() when the drag is over.

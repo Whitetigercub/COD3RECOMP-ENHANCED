@@ -834,6 +834,9 @@ namespace
                             }
                         }
                         if(ImGui::IsItemHovered())ImGui::SetTooltip("Selecting a preset updates the blood settings immediately. Manually changing a setting switches this to Custom. Blood Spray Style is independent of presets.");
+                        const bool woundsChanged = ImGui::Checkbox("Enemy Wounds", &g_edit.enemyWounds);
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Experimental. Adds one blood mark to a living enemy after a torso bullet hit.");
                         changed |= ImGui::Checkbox("Enable Blood", &b.enabled);
                         ImGui::BeginDisabled(!b.enabled);
                         changed |= ImGui::SliderInt("Blood Amount", &b.amount,0,200,"%d%%");
@@ -864,7 +867,13 @@ namespace
                         ImGui::EndDisabled();
                         if(ImGui::Button("Reset Blood to Defaults")){b=Blood::Options{};changed=true;} // Blood::Options{} defaults to Classic (directionalSprays=false)
                         static bool pendingSave=false;
-                        if(changed){auto live=Settings::Get();live.blood=b;Settings::Preview(live);pendingSave=true;}
+                        if (changed || woundsChanged) {
+                            auto live = Settings::Get();
+                            if (changed) live.blood = b;
+                            live.enemyWounds = g_edit.enemyWounds;
+                            Settings::Preview(live);
+                            pendingSave = true;
+                        }
                         if(pendingSave&&!ImGui::IsAnyItemActive()){Settings::Save();pendingSave=false;}
                         ImGui::TextDisabled("Blood changes apply immediately and save automatically.");
                         ImGui::TextDisabled("Presets: MINIMAL is the earlier restrained look, NORMAL is tuned for visibility, ENHANCED is balanced, BRUTAL is maximum. Manual tweaks switch to Custom. Existing settings are preserved until you choose a preset.");

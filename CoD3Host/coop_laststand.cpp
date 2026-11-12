@@ -14,6 +14,7 @@
 #ifndef COD3_MP
 
 #include "coop.h"
+#include "enemy_wounds.h"
 #include "overlay.h"
 
 #include <algorithm>
@@ -343,7 +344,9 @@ PPC_FUNC(sub_82564888)
         // client 1 hurt by the world here (his falls are his own game's: R_SELFHIT brings them)
         if (who == 1 && !g_injecting && (!attacker || !Valid(attacker) || attacker == target || base[attacker] == 0)) return;
     }
+    const auto wound = EnemyWounds::BeforeDamage(ctx, base);
     __imp__sub_82564888(ctx, base);
+    EnemyWounds::AfterDamage(base, wound);
     Probe40Damage(base, target, attacker, damage, means, ctx.r9.u32, before);
     if (IsHost())
     {
