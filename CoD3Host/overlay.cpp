@@ -792,7 +792,7 @@ namespace
                 {
                     ImGui::Checkbox("Improved sprint stamina (solo campaign)", &g_edit.improvedSprintStamina);
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Sprint 35%% longer and refill stamina 40%% faster. The recovery delay still applies.");
+                        ImGui::SetTooltip("Sprint three times as long and refill stamina 40%% faster. The recovery delay still applies.");
                     ImGui::Separator();
                     ImGui::TextUnformatted("Hitmarkers");
                     ImGui::Checkbox("Enable hitmarkers", &g_edit.hitmarkers);

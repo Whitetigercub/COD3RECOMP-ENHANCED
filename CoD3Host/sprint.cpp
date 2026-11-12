@@ -48,7 +48,7 @@ namespace
 void ScaleCampaignSprintDrain(PPCRegister& rate)
 {
     if (!Off() && Settings::ImprovedSprintStamina() && Coop::GetMode() == Coop::Mode::Off)
-        rate.f64 /= 1.35;
+        rate.f64 /= 3.0;
 }
 
 void ScaleCampaignSprintRecharge(PPCRegister& rate)
