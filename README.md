@@ -49,6 +49,15 @@ All four presets enable blood, decals, and blood physics and use the same blood 
 
 The manual sliders and toggles remain available. The selector shows **Custom** whenever the current values differ from all four presets. Choosing **Custom** leaves the current values in place. Opening the config or reloading a checkpoint does not silently overwrite your current values with a preset.
 
+### Bloodstain Style
+
+Open **F11 → Gameplay → Blood & Gore → Bloodstain Style** to choose how blood looks after it lands on a surface.
+
+- **Enhanced (Default)** uses alpha-masked splatters and directional streaks with uneven opacity, irregular edges, holes, and satellite droplets.
+- **Legacy Simple** uses the original solid-color decals.
+
+Switching styles updates stains already in the scene. It preserves Blood Spray Style, your gore preset, and all manual blood settings. The existing `blood_stain_variation` key still saves the choice (`1` for Enhanced, `0` for Legacy Simple). If the key is missing, the game uses Enhanced.
+
 ### Blood Spray Style
 
 Choose **Blood Spray Style** under **F11 → Gameplay → Blood & Gore**.
@@ -91,15 +100,6 @@ A separate clean playtest installation initially ran Forest and The Island at ex
 Forest index-buffer handling dropped from roughly **38.5 µs to 0.12 µs per draw** in the controlled comparison. The old fork (`b22188d`) and stock upstream also reproduced severe slowdowns with memory watch enabled, which makes the issue much more about the per-install configuration state than a clean merge regression.
 
 **If a fresh installation runs at unexpectedly low FPS, check F11 → Watch memory writes before assuming the renderer is broken.** Texture-pool optimisation was also different between installations, which can affect the result if the initial game setup differs.
-
-### Bloodstain Style
-
-Open **F11 → Gameplay → Blood & Gore → Bloodstain Style** to choose how blood looks after it lands on a surface.
-
-- **Enhanced (Default)** uses alpha-masked splatters and directional streaks with uneven opacity, irregular edges, holes, and satellite droplets.
-- **Legacy Simple** uses the original solid-color decals.
-
-Switching styles updates stains already in the scene. It preserves Blood Spray Style, your gore preset, and all manual blood settings. The existing `blood_stain_variation` key still saves the choice (`1` for Enhanced, `0` for Legacy Simple). If the key is missing, the game uses Enhanced.
 
 ## Blood decals: the disappearing-blood incident
 
