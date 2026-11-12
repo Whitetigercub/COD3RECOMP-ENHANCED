@@ -815,9 +815,9 @@ namespace
                     {
                         bool changed=false;
                         auto& b=g_edit.blood;
-                        const char* presetNames[]={"Custom","NORMAL","ENHANCED","BRUTAL"};
+                        const char* presetNames[]={"Custom","MINIMAL","NORMAL","ENHANCED","BRUTAL"};
                         int presetIndex=(int)Blood::DetectPreset(b);
-                        if(ImGui::Combo("Blood Preset", &presetIndex, presetNames, 4)){
+                        if(ImGui::Combo("Blood Preset", &presetIndex, presetNames, 5)){
                             if(presetIndex!=(int)Blood::Preset::Custom){ b=Blood::PresetOptions((Blood::Preset)presetIndex); changed=true; }
                         }
                         if(ImGui::IsItemHovered())ImGui::SetTooltip("Selecting a preset updates the blood settings immediately. Manually changing a setting switches this to Custom.");
@@ -846,7 +846,7 @@ namespace
                         if(changed){auto live=Settings::Get();live.blood=b;Settings::Preview(live);pendingSave=true;}
                         if(pendingSave&&!ImGui::IsAnyItemActive()){Settings::Save();pendingSave=false;}
                         ImGui::TextDisabled("Blood changes apply immediately and save automatically.");
-                        ImGui::TextDisabled("Presets: NORMAL is restrained, ENHANCED is balanced, BRUTAL is maximum. Manual tweaks switch to Custom. Existing settings are preserved until you choose a preset.");
+                        ImGui::TextDisabled("Presets: MINIMAL is the earlier restrained look, NORMAL is tuned for visibility, ENHANCED is balanced, BRUTAL is maximum. Manual tweaks switch to Custom. Existing settings are preserved until you choose a preset.");
                     }
 
                     ImGui::EndTabItem();

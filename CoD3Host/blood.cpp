@@ -149,6 +149,12 @@ bool BloodOptionsEqual(const Blood::Options& a,const Blood::Options& b){
 Blood::Options Blood::PresetOptions(Preset preset){
  Options o{};
  switch(preset){
+ case Preset::Minimal:
+  o.enabled=true; o.decals=true; o.physics=true;
+  o.amount=50; o.density=0; o.persistence=12; o.maxDecals=24;
+  o.cloudSize=.75f; o.cloudOpacity=.75f; o.size=.75f;
+  o.color[0]=0.30f; o.color[1]=0.018f; o.color[2]=0.012f;
+  break;
  case Preset::Normal:
   o.enabled=true; o.decals=true; o.physics=true;
   o.amount=80; o.density=1; o.persistence=30; o.maxDecals=64;
@@ -178,6 +184,7 @@ Blood::Options Blood::PresetOptions(Preset preset){
 
 Blood::Preset Blood::DetectPreset(const Options& options){
  Options o=options; Clamp(o);
+ if(BloodOptionsEqual(o,PresetOptions(Preset::Minimal))) return Preset::Minimal;
  if(BloodOptionsEqual(o,PresetOptions(Preset::Normal))) return Preset::Normal;
  if(BloodOptionsEqual(o,PresetOptions(Preset::Enhanced))) return Preset::Enhanced;
  if(BloodOptionsEqual(o,PresetOptions(Preset::Brutal))) return Preset::Brutal;
@@ -186,6 +193,7 @@ Blood::Preset Blood::DetectPreset(const Options& options){
 
 const char* Blood::PresetName(Preset preset){
  switch(preset){
+ case Preset::Minimal: return "MINIMAL";
  case Preset::Normal: return "NORMAL";
  case Preset::Enhanced: return "ENHANCED";
  case Preset::Brutal: return "BRUTAL";

@@ -10,7 +10,7 @@ struct Options {
     float cloudSize=1.0f, cloudOpacity=1.0f;
     float size=1.0f, color[3]={0.30f,0.018f,0.012f};
 };
-enum class Preset { Custom, Normal, Enhanced, Brutal };
+enum class Preset { Custom, Minimal, Normal, Enhanced, Brutal };
 Options PresetOptions(Preset preset);
 Preset DetectPreset(const Options& options);
 const char* PresetName(Preset preset);
