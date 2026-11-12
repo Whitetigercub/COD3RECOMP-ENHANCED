@@ -81,6 +81,15 @@ All four presets enable blood, decals, and blood physics and use the same blood 
 
 The manual sliders and toggles remain available. The selector shows **Custom** whenever the current values differ from all four presets. Choosing **Custom** leaves the current values in place. Opening the menu keeps your saved values, and choosing a named preset applies its values immediately. Preset choices and manual edits save the resulting values automatically.
 
+### Blood Spray Style
+
+Choose **Blood Spray Style** under **F11 → Gameplay → Blood & Gore**.
+
+- **Classic** is the default and uses the original explosive particle spray. Existing INI files without a spray-style setting use Classic.
+- **Directional (Experimental)** biases spray in the impact direction and varies the mist and particle spread, speed, size, and lifetime.
+
+The style is saved separately as `blood_spray_style` (`0` for Classic, `1` for Directional). Switching styles keeps the selected gore preset, and selecting a gore preset keeps your spray style.
+
 ## Blood decals: the disappearing-blood incident
 
 Earlier versions exhibited intermittent disappearing blood, most notoriously on **Chambois**. Extensive diagnostics confirmed that blood could be generated and drawn, but they never established a definitive renderer root cause. Earlier plans for a full renderer redesign and a campaign-wide blood survey are **no longer active work items**.
