@@ -19,7 +19,7 @@ std::mutex mutex;
 std::atomic<bool> enabled{false};
 Blood::Options options;
 struct Particle {V p,v;float life=0,size=0;uint64_t event=0;};
-struct Decal {V p,n;std::array<V,12> offsets{};float size=0,life=0;uint64_t order=0,event=0;};
+struct Decal {V p,n;std::array<V,12> offsets{}, variedOffsets{};float size=0,life=0;uint64_t order=0,event=0;};
 std::array<Particle,ParticleLimit> particles;
 std::array<Decal,DecalLimit> decals;
 std::array<Blood::Impact,QueueLimit> queue;
@@ -61,7 +61,29 @@ Hit Trace(PPCContext& ctx,uint8_t* base,V from,V to){
  hit.valid=std::isfinite(hit.fraction)&&hit.fraction>=0&&hit.fraction<=1&&Finite(hit.n)&&Finite(hit.p)&&!base[scratch+60];
  return hit;
 }
-void AddDecal(V p,V normal,float size,uint64_t event=0){
+// Keep the existing 12-triangle fan. Each positive radius occupies a
+// separate 30-degree sector, so the edges cannot cross and the fan cannot
+// flip. The footprint never exceeds the original maximum radius.
+std::array<V,12> VariedOutline(V u,V v,uint32_t seed){
+ auto sample=[&](){
+  seed=seed*1664525u+1013904223u;
+  return float(seed>>8)/16777215.0f;
+ };
+ const float phase=sample()*6.2831853f;
+ const int broad=int(sample()*11.999f);
+ const int narrow=(broad+4+int(sample()*4.999f))%12;
+ std::array<V,12> outline{};
+ for(int k=0;k<12;k++){
+  float radius=.52f+.29f*sample();
+  if(k==broad||k==(broad+1)%12||k==(broad+11)%12)radius+=.17f;
+  if(k==narrow)radius+=.19f;
+  const float angle=phase+k*6.2831853f/12;
+  outline[k]=u*(cosf(angle)*radius)+v*(sinf(angle)*radius);
+ }
+ return outline;
+}
+
+void AddDecal(V p,V normal,float size,uint64_t event=0,V travel={}){
  if(!options.decals)return;
  if(!Finite(p)||!Finite(normal)||Dot(normal,normal)<.25f)return;
  // Geometry and surface basis are fixed at collision, never camera-facing.
@@ -70,6 +92,21 @@ void AddDecal(V p,V normal,float size,uint64_t event=0){
  V u=Unit(Cross(normal,std::fabs(normal.z)<.9f?V{0,0,1}:V{1,0,0})),v=Cross(normal,u);
  uint32_t seed=rng;
  for(int k=0;k<12;k++){seed=seed*1664525u+1013904223u;float r=.65f+(seed&255)/255.0f*.35f;float a=k*6.2831853f/12;d.offsets[k]=u*(cosf(a)*r)+v*(sinf(a)*r);}
+ // A separate per-decal seed keeps both spray styles' random streams intact.
+ const uint32_t shapeSeed=seed^uint32_t(d.order*0x9e3779b9u);
+ d.variedOffsets=VariedOutline(u,v,shapeSeed);
+ // An occasional glancing impact becomes a streak along the surface.
+ // Squeezing the transverse axis preserves winding and stays inside
+ // the same footprint. The trailing half is shorter than the leading half.
+ const V along=travel-normal*Dot(travel,normal);
+ const float alongSq=Dot(along,along);
+ if((shapeSeed&7u)==0&&std::isfinite(alongSq)&&alongSq>1.0f&&alongSq>Dot(travel,travel)*.5f){
+  const V axis=Unit(along), across=Cross(normal,axis);
+  for(V& offset:d.variedOffsets){
+   const float forward=Dot(offset,axis);
+   offset=axis*(forward<0?forward*.72f:forward)+across*(Dot(offset,across)*.50f);
+  }
+ }
 }
 void Spawn(const Blood::Impact& e){
  BloodDiag::Log("spawn player_event=%llu",e.event);
@@ -130,7 +167,7 @@ void Frame(PPCContext& ctx,uint8_t* base){
   // Collision remains active without gravity so the decal toggle is independent.
   auto h=Trace(ctx,base,before,p.p);
   if(!h.valid){BloodDiag::Log("particle slot=%zu removed reason=invalid_or_startsolid_trace",size_t(&p-particles.data()));p.life=0;continue;}
-  if(h.fraction<1){BloodDiag::Log("particle slot=%zu converts_to_decal at=%.4f,%.4f,%.4f",size_t(&p-particles.data()),h.p.x,h.p.y,h.p.z);AddDecal(h.p,h.n,p.size*(2+Random()*3),p.event);p.life=0;continue;}
+  if(h.fraction<1){BloodDiag::Log("particle slot=%zu converts_to_decal at=%.4f,%.4f,%.4f",size_t(&p-particles.data()),h.p.x,h.p.y,h.p.z);AddDecal(h.p,h.n,p.size*(2+Random()*3),p.event,p.v);p.life=0;continue;}
 
  }
  if(Controlled()&&controlledCaptured){
@@ -157,7 +194,7 @@ void Blood::Clamp(Options& o){
 
 namespace {
 bool BloodOptionsEqual(const Blood::Options& a,const Blood::Options& b){
- // directionalSprays is independent of presets and not part of preset identity.
+ // Spray style and stain variation are independent of preset identity.
  return a.enabled==b.enabled&&a.decals==b.decals&&a.physics==b.physics&&
   a.amount==b.amount&&a.density==b.density&&a.persistence==b.persistence&&a.maxDecals==b.maxDecals&&
   std::fabs(a.cloudSize-b.cloudSize)<0.0001f&&std::fabs(a.cloudOpacity-b.cloudOpacity)<0.0001f&&std::fabs(a.size-b.size)<0.0001f&&
@@ -279,7 +316,8 @@ int Blood::BuildWorld(WorldVertex* output,int capacity){
   float fade=options.persistence?std::min(1.0f,d.life/2):1;
   uint32_t color=uint32_t(options.color[0]*255)|(uint32_t(options.color[1]*255)<<8)|(uint32_t(options.color[2]*255)<<16)|(uint32_t(.72f*fade*255)<<24);
   auto vertex=[&](V v){output[count++]={v.x,v.y,v.z,color};};
-  for(int k=0;k<12;k++){vertex(d.p);vertex(d.p+d.offsets[k]*(d.size*options.size));vertex(d.p+d.offsets[(k+1)%12]*(d.size*options.size));}
+  const auto& offsets=options.stainVariation?d.variedOffsets:d.offsets;
+  for(int k=0;k<12;k++){vertex(d.p);vertex(d.p+offsets[k]*(d.size*options.size));vertex(d.p+offsets[(k+1)%12]*(d.size*options.size));}
  }
  if(BloodDiag::On()){static uint64_t last=0;auto now=GetTickCount64();if(now-last>500){last=now;uint64_t hash=1469598103934665603ull;int live=0;for(const auto& d:decals)if(d.size>0){++live;const auto* bytes=reinterpret_cast<const unsigned char*>(&d.p);for(size_t k=0;k<sizeof(d.p);k++)hash=(hash^bytes[k])*1099511628211ull;}BloodDiag::Log("geometry decals=%d vertices=%d positions_hash=%016llX first_id=%llu first_pos=%.4f,%.4f,%.4f",live,count,hash,decals[0].order,decals[0].p.x,decals[0].p.y,decals[0].p.z);int slot=0;for(const auto& d:decals)if(d.size>0){if(slot<8)BloodDiag::Log("render_link slot=%d decal=%llu player_event=%llu alpha=%.6f rgb=%.4f,%.4f,%.4f",slot,d.order,d.event,.72f*(options.persistence?std::min(1.0f,d.life/2):1),options.color[0],options.color[1],options.color[2]);++slot;}}}
  // Predict only the remaining fraction of the simulation step; camera motion
