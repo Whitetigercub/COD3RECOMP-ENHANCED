@@ -151,8 +151,8 @@ Blood::Options Blood::PresetOptions(Preset preset){
  switch(preset){
  case Preset::Normal:
   o.enabled=true; o.decals=true; o.physics=true;
-  o.amount=50; o.density=0; o.persistence=12; o.maxDecals=24;
-  o.cloudSize=.75f; o.cloudOpacity=.75f; o.size=.75f;
+  o.amount=80; o.density=1; o.persistence=30; o.maxDecals=64;
+  o.cloudSize=1.00f; o.cloudOpacity=1.00f; o.size=1.00f;
   o.color[0]=0.30f; o.color[1]=0.018f; o.color[2]=0.012f;
   break;
  case Preset::Enhanced:
