@@ -57,8 +57,8 @@ int main(){
  s.blood.color[0]=0.18f;s.blood.color[1]=0.04f;s.blood.color[2]=0.02f;Settings::Set(s);Settings::Load(dir);auto loaded=Settings::Get().blood;
  CHECK(loaded.enabled&&loaded.amount==173&&loaded.density==3);CHECK(loaded.size==2.25f&&!loaded.decals&&!loaded.physics);
  CHECK(loaded.persistence==0&&loaded.maxDecals==47);CHECK(std::fabs(loaded.color[0]-.18f)<.001f&&std::fabs(loaded.color[1]-.04f)<.001f&&std::fabs(loaded.color[2]-.02f)<.001f);
- loaded.amount=999;loaded.density=-4;loaded.maxDecals=900;loaded.size=NAN;loaded.color[0]=NAN;Blood::Clamp(loaded);
- CHECK(loaded.amount==200&&loaded.density==0&&loaded.maxDecals==128&&loaded.size==1&&loaded.color[0]==0);
+ loaded.amount=999;loaded.density=-4;loaded.maxDecals=Blood::MaxDecals+1;loaded.size=NAN;loaded.color[0]=NAN;Blood::Clamp(loaded);
+ CHECK(loaded.amount==200&&loaded.density==0&&loaded.maxDecals==Blood::MaxDecals&&loaded.size==1&&loaded.color[0]==0);
  // World vertices are generated from positions, not cached screen points.
  o.enabled=true;o.amount=100;o.size=1;Blood::Configure(o);Blood::After(base,hit);frameAt=GetTickCount64()-50;Frame(ctx,base);
  std::array<Blood::WorldVertex,8192> vertices;
@@ -68,3 +68,4 @@ int main(){
  printf("PASS %d blood simulation/settings/world-geometry checks. Native collision stubbed.\n",checks);
 }
 namespace Overlay { bool IsOpen(){return testMenuOpen;} }
+namespace Kernel { void QueueConsoleCommand(const std::string&) {} }

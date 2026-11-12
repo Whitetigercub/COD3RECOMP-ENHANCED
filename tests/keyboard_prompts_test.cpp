@@ -45,7 +45,14 @@ int main() {
     v.keys[Settings::Aim]=0;equal(Label(0x26,v,"aim"),"-");
     equal(Label(0xFF,v,"unknown"),"");equal(Key(VK_RSHIFT),"RShift");
     equal(Key(VK_F12),"F12");equal(Key(VK_NUMPAD7),"Num7");
-    ButtonPrompts::ControllerUsed();if(keyboard.load()) throw std::runtime_error("controller switching failed");++checks;
-    ButtonPrompts::KeyboardUsed();if(!keyboard.load()) throw std::runtime_error("keyboard switching failed");++checks;
+    ButtonPrompts::ControllerUsed();if(ButtonPrompts::KeyboardActive()) throw std::runtime_error("controller switching failed");++checks;
+    ButtonPrompts::KeyboardUsed();if(!ButtonPrompts::KeyboardActive()) throw std::runtime_error("keyboard switching failed");++checks;
+    Settings::testValues.buttonPrompts=1;
+    if(ButtonPrompts::KeyboardActive()) throw std::runtime_error("forced controller prompts ignored");
+    ++checks;
+    Settings::testValues.buttonPrompts=2;
+    ButtonPrompts::ControllerUsed();
+    if(!ButtonPrompts::KeyboardActive()) throw std::runtime_error("forced keyboard prompts ignored");
+    ++checks;
     printf("PASS: %d keyboard prompt mapping, rebinding and device-switching checks\n",checks);
 }

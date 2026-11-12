@@ -1,4 +1,4 @@
-"""Check saved selection compatibility against the unmodified Git checkpoint."""
+"""Check saved selection compatibility against the 0.5.424 fork checkpoint."""
 from pathlib import Path
 import re
 import subprocess
@@ -16,17 +16,14 @@ for file, names in {
     'overlay.cpp': ['weapons', 'sidearms'],
 }.items():
     relative = 'CoD3Host/' + file
-    before = subprocess.check_output(['git', 'show', 'HEAD:' + relative], cwd=root, text=True)
+    before = subprocess.check_output(['git', 'show', 'b22188d5067f4ec8e52bcc8e65540bb173da8eaf:' + relative], cwd=root, text=True)
     after = (root / relative).read_text()
     for name in names:
         old, new = array(before, name), array(after, name)
-        assert new[:-3] == old, f'{file}:{name}: existing saved IDs changed'
-        assert new[-3].lower().replace(' ', '') == 'gewehr43'
-        assert new[-2].lower().replace(' ', '') == 'mg42'
-        assert new[-1].lower().replace(' ', '').replace('-', '').replace('_', '').replace('(', '').replace(')', '') in ('leeenfieldscoped', 'leeenfieldsniper')
-        assert len(new) == (24 if 'sidearm' in name.lower() else 22)
+        assert new[:len(old)] == old, f'{file}:{name}: existing saved IDs changed'
+        assert len(new) == (28 if 'sidearm' in name.lower() else 26), (file, name)
 
 settings = (root / 'CoD3Host/settings.cpp').read_text()
-assert 'v.classPrimary[i] > 21' in settings
-assert 'v.classSidearm[i] > 23' in settings
-print('PASS: all five selection tables append G43, MG42, then the scoped Lee-Enfield; prior IDs and saved bounds agree')
+assert 'v.classPrimary[i] > 25' in settings
+assert 'v.classSidearm[i] > 27' in settings
+print('PASS: saved weapon IDs are unchanged and all five selection tables expose the new slots')

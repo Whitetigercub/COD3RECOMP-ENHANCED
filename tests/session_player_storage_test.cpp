@@ -21,7 +21,7 @@ int main()
     assert(RedirectAddress(first, 0, storage) == first);
     assert(RedirectAddress(first, object, 0) == first);
     assert(RedirectAddress(0x60000000, 0xFFFFFFF0, storage) == 0x60000000);
-    for (uint32_t slot : {0u, 23u, 24u, 31u}) {
+    for (uint32_t slot : {0u, 23u, 24u, 31u, StorageCount - 1}) {
         assert(RedirectRosterAddress(first + slot * RecordBytes, object, storage) == storage + slot * RecordBytes);
         assert(RedirectRosterAddress(first + slot * RecordBytes + 12, object, storage) == storage + slot * RecordBytes + 12);
     }
@@ -35,5 +35,5 @@ int main()
     assert(RedirectRosterAddress(first + 24 * RecordBytes, object, storage, ActiveCount) == first + 24 * RecordBytes);
     assert(RedirectRosterAddress(first + 23 * RecordBytes, object, storage, ActiveCount) == storage + 23 * RecordBytes);
     assert(RedirectRosterAddress(first, object, storage, 0) == first);
-    assert(RedirectRosterAddress(first, object, storage, 33) == first);
+    assert(RedirectRosterAddress(first, object, storage, StorageCount + 1) == first);
 }
