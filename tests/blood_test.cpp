@@ -141,6 +141,11 @@ int main(){
   CHECK(Blood::BuildWorld(classic.data(),36)==36&&(classic[0].mask>>16)==0&&memcmp(varied.data(),classic.data(),sizeof varied)!=0);
   shape.stainVariation=true;Blood::Configure(shape);
   CHECK(Blood::BuildWorld(again.data(),36)==36&&memcmp(varied.data(),again.data(),sizeof varied)==0);
+  for(bool enhanced:{false,true,false,true}){
+   shape.stainVariation=enhanced;Blood::Configure(shape);
+   const auto& expected=enhanced?varied:classic;
+   CHECK(Blood::BuildWorld(again.data(),36)==36&&memcmp(expected.data(),again.data(),sizeof again)==0);
+  }
   CHECK(Blood::BuildWorld(again.data(),35)==0);
   for(int i=0;i<Blood::MaxDecals+1;i++)AddDecal({0,0,0},{0,0,1},5);
   CHECK(Blood::Status().decals==Blood::MaxDecals);
@@ -149,6 +154,10 @@ int main(){
   s.blood=shape;s.blood.stainVariation=false;s.blood.directionalSprays=true;
   Settings::Set(s);Settings::Load(dir);
   CHECK(!Settings::Get().blood.stainVariation&&Settings::Get().blood.directionalSprays);
+  CHECK(Blood::DetectPreset(Settings::Get().blood)==Blood::Preset::Brutal);
+  s.blood.stainVariation=true;Settings::Set(s);Settings::Load(dir);
+  CHECK(Settings::Get().blood.stainVariation&&Settings::Get().blood.directionalSprays);
+  CHECK(Blood::DetectPreset(Settings::Get().blood)==Blood::Preset::Brutal);
   {std::ofstream oldIni(dir/"CoD3Recomp.ini");oldIni<<"blood_amount = 93\n";}
   Settings::Load(dir);
   CHECK(Settings::Get().blood.stainVariation&&Settings::Get().blood.amount==93);

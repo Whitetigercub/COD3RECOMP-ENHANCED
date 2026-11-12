@@ -313,7 +313,10 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
             else if (key == "blood_density") v.blood.density = atoi(value.c_str());
             else if (key == "blood_cloud_size") v.blood.cloudSize = float(atof(value.c_str()));
             else if (key == "blood_cloud_opacity") v.blood.cloudOpacity = float(atof(value.c_str()));
-            else if (key == "blood_stain_variation") v.blood.stainVariation = atoi(value.c_str()) != 0;
+            // Retain the old toggle's key and values for the style selector.
+            else if (key == "blood_stain_variation") {
+                if (value == "0" || value == "1") v.blood.stainVariation = value == "1";
+            }
             else if (key == "blood_spray_style") v.blood.directionalSprays = atoi(value.c_str()) != 0;
             else if (key == "blood_directional_sprays") v.blood.directionalSprays = atoi(value.c_str()) != 0;
             else if (key == "blood_size") v.blood.size = float(atof(value.c_str()));
