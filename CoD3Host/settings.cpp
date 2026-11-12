@@ -313,6 +313,8 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
             else if (key == "blood_density") v.blood.density = atoi(value.c_str());
             else if (key == "blood_cloud_size") v.blood.cloudSize = float(atof(value.c_str()));
             else if (key == "blood_cloud_opacity") v.blood.cloudOpacity = float(atof(value.c_str()));
+            else if (key == "blood_spray_style") v.blood.directionalSprays = atoi(value.c_str()) != 0;
+            else if (key == "blood_directional_sprays") v.blood.directionalSprays = atoi(value.c_str()) != 0;
             else if (key == "blood_size") v.blood.size = float(atof(value.c_str()));
             else if (key == "blood_decals") v.blood.decals = atoi(value.c_str()) != 0;
             else if (key == "blood_physics") v.blood.physics = atoi(value.c_str()) != 0;
@@ -443,7 +445,7 @@ void Settings::Save()
         fprintf(file, "max_players = %d\n", v.maxPlayers >= 32 ? 32 : 24);
         fprintf(file, "blood_enabled = %d\nblood_amount = %d\nblood_density = %d\nblood_size = %.3f\nblood_decals = %d\nblood_physics = %d\nblood_persistence = %d\nblood_max_decals = %d\nblood_red = %.4f\nblood_green = %.4f\nblood_blue = %.4f\n",
             v.blood.enabled,v.blood.amount,v.blood.density,v.blood.size,v.blood.decals,v.blood.physics,v.blood.persistence,v.blood.maxDecals,v.blood.color[0],v.blood.color[1],v.blood.color[2]);
-        fprintf(file, "blood_cloud_size = %.3f\nblood_cloud_opacity = %.3f\n", v.blood.cloudSize,v.blood.cloudOpacity);
+        fprintf(file, "blood_cloud_size = %.3f\nblood_cloud_opacity = %.3f\nblood_spray_style = %d\n", v.blood.cloudSize,v.blood.cloudOpacity,v.blood.directionalSprays?1:0);
         fprintf(file, "hitmarkers = %d\nhitmarker_sound = %d\nhitmarker_red_kill = %d\nhitmarker_size = %d\nhitmarker_opacity = %d\nhitmarker_duration = %d\nhitmarker_volume = %d\n",
             v.hitmarkers, v.hitmarkerSound, v.hitmarkerRedKill, v.hitmarkerSize, v.hitmarkerOpacity, v.hitmarkerDuration, v.hitmarkerVolume);
         fprintf(file, "button_prompts = %d\n", v.buttonPrompts);   // 0.5.478
