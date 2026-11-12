@@ -101,6 +101,7 @@ set(COD3_HOST_SOURCES
     "pc_prompts.cpp"      # 0.5.478: the button prompts as keys
     "spectator.cpp"       # 0.5.490: free camera and following players
     "menu_mouse.cpp"      # 0.5.595: the campaign's menus by mouse (FrankHUN88453's)
+    "campaign_movement.cpp"
     "sprint.cpp"          # 0.5.601: the campaign's own sprint (FrankHUN88453's)
     "render_prompts.cpp"
     "native_options.cpp"

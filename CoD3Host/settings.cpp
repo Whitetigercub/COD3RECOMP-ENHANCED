@@ -122,6 +122,12 @@ bool Settings::ImprovedSprintStamina()
     return g_values.improvedSprintStamina;
 }
 
+bool Settings::FastWalkSpeed()
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    return g_values.fastWalkSpeed;
+}
+
 void Settings::Set(const Values& values)
 {
     {
@@ -335,6 +341,7 @@ void Settings::Load(const std::filesystem::path& exeDirectory)
             else if (key == "hitmarker_duration") v.hitmarkerDuration = atoi(value.c_str());
             else if (key == "hitmarker_volume") v.hitmarkerVolume = atoi(value.c_str());
             else if (key == "improved_sprint_stamina") v.improvedSprintStamina = atoi(value.c_str()) != 0;
+            else if (key == "fast_walk_speed") v.fastWalkSpeed = value == "1";
             else if (key == "toggle_sprint") v.toggleSprint = atoi(value.c_str()) != 0;
             else if (key == "button_prompts") v.buttonPrompts = std::clamp(atoi(value.c_str()), 0, 2);   // 0.5.478
             else if (key == "shell_shock_blur") v.shellShockBlur = atoi(value.c_str()) != 0;
@@ -446,6 +453,7 @@ void Settings::Save()
                 v.hdrFlare, v.hdrHueCorrection, v.hdrConeResponse, v.hdrBloom, v.hdrTvRamp, v.hdrFilmUpgrade ? 1 : 0, v.hdrHudMatch ? 1 : 0);
         fprintf(file, "[game]\nplayer_name = %s\nlan_address = %s\nsystem_link_peers = %s\nmaster_volume = %d\naudio_channels = %d\naim_assist = %d\nbounces = %d\ncontroller = %d\nrumble = %d\nstick_deadzone = %d\nmouse_sensitivity = %.2f\nstick_vertical_scale = %d\nraw_mouse = %d\ndirect_mouse = %d\ntoggle_sprint = %d\nshell_shock_blur = %d\nmelee_lunge = %d\n", v.playerName, v.lanAddress, v.systemLinkPeers, v.masterVolume, v.audioChannels, v.aimAssist ? 1 : 0, v.bounces ? 1 : 0, v.controller ? 1 : 0, v.rumble ? 1 : 0, v.stickDeadzone, v.mouseSensitivity, v.stickVerticalScale, v.rawMouse ? 1 : 0, v.directMouse ? 1 : 0, v.toggleSprint ? 1 : 0, v.shellShockBlur ? 1 : 0, v.meleeLunge ? 1 : 0);
         fprintf(file, "improved_sprint_stamina = %d\n", v.improvedSprintStamina ? 1 : 0);
+        fprintf(file, "fast_walk_speed = %d\n", v.fastWalkSpeed ? 1 : 0);
         fprintf(file, "max_players = %d\n", v.maxPlayers >= 32 ? 32 : 24);
         fprintf(file, "blood_enabled = %d\nblood_amount = %d\nblood_density = %d\nblood_size = %.3f\nblood_decals = %d\nblood_physics = %d\nblood_persistence = %d\nblood_max_decals = %d\nblood_red = %.4f\nblood_green = %.4f\nblood_blue = %.4f\n",
             v.blood.enabled,v.blood.amount,v.blood.density,v.blood.size,v.blood.decals,v.blood.physics,v.blood.persistence,v.blood.maxDecals,v.blood.color[0],v.blood.color[1],v.blood.color[2]);
