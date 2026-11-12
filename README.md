@@ -92,6 +92,15 @@ Forest index-buffer handling dropped from roughly **38.5 µs to 0.12 µs per dra
 
 **If a fresh installation runs at unexpectedly low FPS, check F11 → Watch memory writes before assuming the renderer is broken.** Texture-pool optimisation was also different between installations, which can affect the result if the initial game setup differs.
 
+### Bloodstain Style
+
+Open **F11 → Gameplay → Blood & Gore → Bloodstain Style** to choose how blood looks after it lands on a surface.
+
+- **Enhanced (Default)** uses alpha-masked splatters and directional streaks with uneven opacity, irregular edges, holes, and satellite droplets.
+- **Legacy Simple** uses the original solid-color decals.
+
+Switching styles updates stains already in the scene. It preserves Blood Spray Style, your gore preset, and all manual blood settings. The existing `blood_stain_variation` key still saves the choice (`1` for Enhanced, `0` for Legacy Simple). If the key is missing, the game uses Enhanced.
+
 ## Blood decals: the disappearing-blood incident
 
 Earlier versions exhibited intermittent disappearing blood, most notoriously on **Chambois**. Extensive diagnostics confirmed that blood could be generated and drawn, but they never established a definitive root cause in the renderer or data path.
