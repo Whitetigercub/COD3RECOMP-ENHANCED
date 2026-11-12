@@ -37,9 +37,9 @@ PPC_FUNC(sub_82478358)
     // Other callers accelerate in air, on ladders and in special movement modes.
     if (ctx.lr == GroundWalkReturn && ctx.f1.f64 > 0.0)
     {
-        const int multiplier = Settings::WalkSpeedMultiplier();
-        if (multiplier > 1 && Coop::GetMode() == Coop::Mode::Off && IsNormalWalk(base))
-            ctx.f1.f64 = static_cast<float>(ctx.f1.f64 * multiplier);
+        const int bonus = Settings::WalkSpeedBonus();
+        if (bonus > 0 && Coop::GetMode() == Coop::Mode::Off && IsNormalWalk(base))
+            ctx.f1.f64 = static_cast<float>(ctx.f1.f64 * (1.0 + bonus / 100.0));
     }
 
     __imp__sub_82478358(ctx, base);
