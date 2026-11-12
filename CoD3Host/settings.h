@@ -193,6 +193,7 @@ namespace Settings
         bool shellShockBlur = false;     // the blurred, dark screen of a nearby explosion's shell shock (mp_fixes.cpp)
         bool toggleSprint = true;        // a press of sprint starts a run that lasts, not one held (input.cpp)
         Blood::Options blood;
+        bool improvedSprintStamina = false;
         bool hitmarkers = true;
         bool hitmarkerSound = true;
         bool hitmarkerRedKill = true;
@@ -220,6 +221,7 @@ namespace Settings
 
     // The current values, and setting them (which also saves).
     Values Get();
+    bool ImprovedSprintStamina();
     void Set(const Values& values);
     // Setting them without saving, for a slider dragged in the menu (the
     // HDR tabs apply as they move); Save() when the drag is over.
