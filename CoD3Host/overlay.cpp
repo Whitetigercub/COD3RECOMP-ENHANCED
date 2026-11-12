@@ -820,8 +820,10 @@ namespace
                         if(ImGui::Combo("Blood Preset", &presetIndex, presetNames, 5)){
                             if(presetIndex!=(int)Blood::Preset::Custom){
                                 const bool keepDirectional=b.directionalSprays;
+                                const bool keepStainVariation=b.stainVariation;
                                 b=Blood::PresetOptions((Blood::Preset)presetIndex);
                                 b.directionalSprays=keepDirectional;
+                                b.stainVariation=keepStainVariation;
                                 changed=true;
                             }
                         }
@@ -840,6 +842,10 @@ namespace
                         if(ImGui::Combo("Blood Spray Style", &sprayStyle, sprayStyles, 2)){ b.directionalSprays=(sprayStyle==1); changed=true; }
                         if(ImGui::IsItemHovered())ImGui::SetTooltip("Classic restores the original blood spray behavior. Directional (Experimental) enables PR #5 spray variation and directional bias. Default: Classic.");
                         changed |= ImGui::Checkbox("Blood Decals", &b.decals);
+                        const char* stainStyles[]={"Enhanced (Default)","Legacy Simple"};
+                        int stainStyle=b.stainVariation?0:1;
+                        if(ImGui::Combo("Bloodstain Style", &stainStyle, stainStyles, 2)){ b.stainVariation=(stainStyle==0); changed=true; }
+                        if(ImGui::IsItemHovered())ImGui::SetTooltip("Enhanced uses detailed splatters and streaks. Legacy Simple uses the original solid decals.");
                         changed |= ImGui::Checkbox("Blood Physics", &b.physics);
                         if(ImGui::IsItemHovered())ImGui::SetTooltip("Gravity and drag. Surface collisions remain active when gravity is off.");
                         bool permanent=b.persistence==0;

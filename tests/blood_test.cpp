@@ -4,6 +4,7 @@
 #include "settings.h"
 #include <filesystem>
 #include <fstream>
+#include <vector>
 namespace Guest {
 uint8_t* Base=nullptr;
 uint32_t AllocatePhysical(uint32_t){return 0x40010000;}
@@ -84,6 +85,82 @@ int main(){
   rng=0x93A71B2Du; particles={}; nextParticle=0; queued=0;
   Spawn(e);
   CHECK(particles[0].v.x==classic0.v.x && particles[0].v.y==classic0.v.y && particles[0].v.z==classic0.v.z && particles[0].size==classic0.size && particles[0].life==classic0.life && rng==classicRng);
+ }
+ // The two cached outlines share placement and budget. Sweep floor, wall,
+ // and sloped normals and confirm ordered, nonintersecting fan geometry.
+ {
+  Reset("shape test");
+  auto shape=Blood::PresetOptions(Blood::Preset::Brutal);
+  CHECK(shape.stainVariation);
+  shape.enabled=true;Blood::Configure(shape);
+  const V normals[]={{0,0,1},{0,-1,0},{.48f,-.64f,.60f}};
+  int streaks=0;
+  for(V normal:normals){
+   for(int j=0;j<32;j++){
+    const auto seed=rng;
+    const int slot=nextDecal;
+    const V travel=Unit(Cross(normal,{1,0,0}))*100;
+    AddDecal({12,7,3},normal,5,0,travel);
+    CHECK(rng==seed);
+    const auto& d=decals[slot];
+    const V u=Unit(Cross(d.n,std::fabs(d.n.z)<.9f?V{0,0,1}:V{1,0,0})),v=Cross(d.n,u);
+    uint32_t classicSeed=seed;
+    for(int i=0;i<12;i++)classicSeed=classicSeed*1664525u+1013904223u;
+    const bool streak=((classicSeed^uint32_t(d.order*0x9e3779b9u))&7u)==0;
+    streaks+=streak;
+    CHECK(d.maskLayer==(streak?2u:1u));
+    classicSeed=seed;
+    for(int i=0;i<12;i++){
+     const V a=d.variedOffsets[i],b=d.variedOffsets[(i+1)%12];
+     CHECK(Finite(a)&&Dot(a,a)>=.49f&&Dot(a,a)<=1.001f&&std::fabs(Dot(a,d.n))<.0001f);
+     CHECK(Dot(Cross(a,b),d.n)>.04f);
+     auto side=[&](V x,V y,V z){return Dot(Cross(y-x,z-x),d.n);};
+     for(int j=i+2;j<12;j++){
+      if(i==0&&j==11)continue;
+      V c=d.variedOffsets[j],e=d.variedOffsets[(j+1)%12];
+      auto opposite=[](float x,float y){return (x>1e-6f&&y< -1e-6f)||(y>1e-6f&&x< -1e-6f);};
+      CHECK(!(opposite(side(a,b,c),side(a,b,e))&&opposite(side(c,e,a),side(c,e,b))));
+     }
+     classicSeed=classicSeed*1664525u+1013904223u;
+     const float radius=.65f+(classicSeed&255)/255.0f*.35f;
+     const float angle=i*6.2831853f/12;
+     const V classic=u*(cosf(angle)*radius)+v*(sinf(angle)*radius);
+     CHECK(Dot(classic-d.offsets[i],classic-d.offsets[i])==0);
+    }
+   }
+  }
+  CHECK(streaks>0&&streaks<96);
+  CHECK(Dot(decals[0].variedOffsets[0]-decals[1].variedOffsets[0],decals[0].variedOffsets[0]-decals[1].variedOffsets[0])>.0001f);
+  camera.valid=true;
+  std::array<Blood::WorldVertex,36> varied{},again{},classic{};
+  CHECK(Blood::BuildWorld(varied.data(),36)==36&&varied[0].mask==MaskVertex(128,128,decals[0].maskLayer));
+  camera.eye={5,7,9};
+  CHECK(Blood::BuildWorld(again.data(),36)==36&&memcmp(varied.data(),again.data(),sizeof varied)==0);
+  shape.stainVariation=false;Blood::Configure(shape);
+  CHECK(Blood::DetectPreset(shape)==Blood::Preset::Brutal);
+  CHECK(Blood::BuildWorld(classic.data(),36)==36&&(classic[0].mask>>16)==0&&memcmp(varied.data(),classic.data(),sizeof varied)!=0);
+  shape.stainVariation=true;Blood::Configure(shape);
+  CHECK(Blood::BuildWorld(again.data(),36)==36&&memcmp(varied.data(),again.data(),sizeof varied)==0);
+  for(bool enhanced:{false,true,false,true}){
+   shape.stainVariation=enhanced;Blood::Configure(shape);
+   const auto& expected=enhanced?varied:classic;
+   CHECK(Blood::BuildWorld(again.data(),36)==36&&memcmp(expected.data(),again.data(),sizeof again)==0);
+  }
+  CHECK(Blood::BuildWorld(again.data(),35)==0);
+  for(int i=0;i<Blood::MaxDecals+1;i++)AddDecal({0,0,0},{0,0,1},5);
+  CHECK(Blood::Status().decals==Blood::MaxDecals);
+  std::vector<Blood::WorldVertex> full(Blood::MaxVertices);
+  CHECK(Blood::BuildWorld(full.data(),int(full.size()))==Blood::MaxDecals*Blood::VerticesPerSplat);
+  s.blood=shape;s.blood.stainVariation=false;s.blood.directionalSprays=true;
+  Settings::Set(s);Settings::Load(dir);
+  CHECK(!Settings::Get().blood.stainVariation&&Settings::Get().blood.directionalSprays);
+  CHECK(Blood::DetectPreset(Settings::Get().blood)==Blood::Preset::Brutal);
+  s.blood.stainVariation=true;Settings::Set(s);Settings::Load(dir);
+  CHECK(Settings::Get().blood.stainVariation&&Settings::Get().blood.directionalSprays);
+  CHECK(Blood::DetectPreset(Settings::Get().blood)==Blood::Preset::Brutal);
+  {std::ofstream oldIni(dir/"CoD3Recomp.ini");oldIni<<"blood_amount = 93\n";}
+  Settings::Load(dir);
+  CHECK(Settings::Get().blood.stainVariation&&Settings::Get().blood.amount==93);
  }
  VirtualFree(base,0,MEM_RELEASE);
  printf("PASS %d blood simulation/settings/world-geometry checks. Native collision stubbed.\n",checks);
