@@ -75,19 +75,31 @@ void Spawn(const Blood::Impact& e){
  BloodDiag::Log("spawn player_event=%llu",e.event);
  V p{e.point[0],e.point[1],e.point[2]},d=Unit({e.direction[0],e.direction[1],e.direction[2]});
  const float distance=std::sqrt(Dot(p-camera.eye,p-camera.eye));
- // Controlled per-impact variation keeps repeated hits from looking identical while
- // preserving amount/density scaling (direction comes from existing impact data).
- const float impactVar=0.85f+Random()*0.30f;
- const float spread=0.75f+Random()*0.55f;
- const float speedVar=0.85f+Random()*0.35f;
- int count=int((3+options.density*3)*options.amount/100.0f*std::clamp(e.damage/35.0f,0.5f,2.0f)*impactVar);
+ int count=int((3+options.density*3)*options.amount/100.0f*std::clamp(e.damage/35.0f,0.5f,2.0f));
  if(distance>2000)count/=4;else if(distance>1000)count/=2;
  count=std::clamp(count,1,32);
- for(int i=0;i<count;i++){
-  V scatter{(Random()-0.5f)*spread,(Random()-0.5f)*spread,(Random()-0.35f)*spread};
-  float speed=std::clamp(80.0f+e.damage*1.5f,90.0f,280.0f)*(0.45f+Random()*0.75f)*speedVar;
-  float dirBias=1.35f+Random()*0.50f;
-  particles[nextParticle++%ParticleLimit]={p,Unit(d*dirBias+scatter)*speed,0.45f+Random()*0.95f,(0.30f+Random()*1.40f),e.event};
+ if(!options.directionalSprays){
+  // Classic/original spawning behavior.
+  for(int i=0;i<count;i++){
+   V scatter{Random()-0.5f,Random()-0.5f,Random()*0.8f};
+   float speed=std::clamp(80.0f+e.damage*1.5f,90.0f,280.0f)*(0.5f+Random());
+   particles[nextParticle++%ParticleLimit]={p,Unit(d+scatter*1.2f)*speed,0.55f+Random()*0.8f,(0.4f+Random()*1.2f),e.event};
+  }
+ } else {
+  // Experimental: controlled per-impact variation and directional bias.
+  const float impactVar=0.85f+Random()*0.30f;
+  const float spread=0.75f+Random()*0.55f;
+  const float speedVar=0.85f+Random()*0.35f;
+  int variedCount=int((3+options.density*3)*options.amount/100.0f*std::clamp(e.damage/35.0f,0.5f,2.0f)*impactVar);
+  if(distance>2000)variedCount/=4;else if(distance>1000)variedCount/=2;
+  variedCount=std::clamp(variedCount,1,32);
+  for(int i=0;i<variedCount;i++){
+   V scatter{(Random()-0.5f)*spread,(Random()-0.5f)*spread,(Random()-0.35f)*spread};
+   float speed=std::clamp(80.0f+e.damage*1.5f,90.0f,280.0f)*(0.45f+Random()*0.75f)*speedVar;
+   float dirBias=1.35f+Random()*0.50f;
+   particles[nextParticle++%ParticleLimit]={p,Unit(d*dirBias+scatter)*speed,0.45f+Random()*0.95f,(0.30f+Random()*1.40f),e.event};
+  }
+  count=variedCount;
  }
  if(TraceOn())printf("blood: confirmed damage %d, spawned %d droplets at %.1f %.1f %.1f\n",e.damage,count,p.x,p.y,p.z);
 }
@@ -145,6 +157,7 @@ void Blood::Clamp(Options& o){
 
 namespace {
 bool BloodOptionsEqual(const Blood::Options& a,const Blood::Options& b){
+ // directionalSprays is independent of presets and not part of preset identity.
  return a.enabled==b.enabled&&a.decals==b.decals&&a.physics==b.physics&&
   a.amount==b.amount&&a.density==b.density&&a.persistence==b.persistence&&a.maxDecals==b.maxDecals&&
   std::fabs(a.cloudSize-b.cloudSize)<0.0001f&&std::fabs(a.cloudOpacity-b.cloudOpacity)<0.0001f&&std::fabs(a.size-b.size)<0.0001f&&

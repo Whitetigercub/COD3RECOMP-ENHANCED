@@ -64,6 +64,27 @@ int main(){
  std::array<Blood::WorldVertex,8192> vertices;
  CHECK(Blood::BuildWorld(vertices.data(),8192)>0);testMenuOpen=true;CHECK(Blood::BuildWorld(vertices.data(),8192)==0);testMenuOpen=false;
  o.enabled=false;Blood::Configure(o);CHECK(Blood::BuildWorld(vertices.data(),8192)==0);
+ // Focused regression: OFF restores original spawning, ON uses experimental variation/directional bias.
+ {
+  Blood::Impact e{}; e.valid=true; e.damage=30; e.point[0]=0; e.point[1]=0; e.point[2]=12; e.direction[0]=1; e.direction[1]=0; e.direction[2]=0; e.event=42;
+  camera.valid=true; camera.eye={-100,0,50};
+  options.enabled=true; options.amount=100; options.density=1; options.directionalSprays=false;
+  rng=0x93A71B2Du; particles={}; nextParticle=0; queued=0;
+  Spawn(e);
+  CHECK(particles[0].life>0);
+  int classicCount=0; for(auto& p:particles) classicCount+=p.life>0;
+  auto classic0=particles[0]; uint32_t classicRng=rng;
+  options.directionalSprays=true;
+  rng=0x93A71B2Du; particles={}; nextParticle=0; queued=0;
+  Spawn(e);
+  CHECK(particles[0].life>0);
+  bool differs=(particles[0].v.x!=classic0.v.x || particles[0].v.y!=classic0.v.y || particles[0].v.z!=classic0.v.z || particles[0].size!=classic0.size || particles[0].life!=classic0.life || rng!=classicRng);
+  CHECK(differs);
+  options.directionalSprays=false;
+  rng=0x93A71B2Du; particles={}; nextParticle=0; queued=0;
+  Spawn(e);
+  CHECK(particles[0].v.x==classic0.v.x && particles[0].v.y==classic0.v.y && particles[0].v.z==classic0.v.z && particles[0].size==classic0.size && particles[0].life==classic0.life && rng==classicRng);
+ }
  VirtualFree(base,0,MEM_RELEASE);
  printf("PASS %d blood simulation/settings/world-geometry checks. Native collision stubbed.\n",checks);
 }

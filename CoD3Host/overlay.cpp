@@ -818,9 +818,14 @@ namespace
                         const char* presetNames[]={"Custom","MINIMAL","NORMAL","ENHANCED","BRUTAL"};
                         int presetIndex=(int)Blood::DetectPreset(b);
                         if(ImGui::Combo("Blood Preset", &presetIndex, presetNames, 5)){
-                            if(presetIndex!=(int)Blood::Preset::Custom){ b=Blood::PresetOptions((Blood::Preset)presetIndex); changed=true; }
+                            if(presetIndex!=(int)Blood::Preset::Custom){
+                                const bool keepDirectional=b.directionalSprays;
+                                b=Blood::PresetOptions((Blood::Preset)presetIndex);
+                                b.directionalSprays=keepDirectional;
+                                changed=true;
+                            }
                         }
-                        if(ImGui::IsItemHovered())ImGui::SetTooltip("Selecting a preset updates the blood settings immediately. Manually changing a setting switches this to Custom.");
+                        if(ImGui::IsItemHovered())ImGui::SetTooltip("Selecting a preset updates the blood settings immediately. Manually changing a setting switches this to Custom. Blood Spray Style is independent of presets.");
                         changed |= ImGui::Checkbox("Enable Blood", &b.enabled);
                         ImGui::BeginDisabled(!b.enabled);
                         changed |= ImGui::SliderInt("Blood Amount", &b.amount,0,200,"%d%%");
@@ -830,6 +835,10 @@ namespace
                         changed |= ImGui::SliderFloat("Blood Cloud Size", &b.cloudSize,.25f,4.f,"%.2fx");
                         changed |= ImGui::SliderFloat("Blood Cloud Opacity", &b.cloudOpacity,0.f,3.f,"%.2fx");
                         if(ImGui::IsItemHovered())ImGui::SetTooltip("Multiplier for COD3 native blood clouds. 1x retains the original appearance.");
+                        const char* sprayStyles[]={"Classic","Directional (Experimental)"};
+                        int sprayStyle=b.directionalSprays?1:0;
+                        if(ImGui::Combo("Blood Spray Style", &sprayStyle, sprayStyles, 2)){ b.directionalSprays=(sprayStyle==1); changed=true; }
+                        if(ImGui::IsItemHovered())ImGui::SetTooltip("Classic restores the original blood spray behavior. Directional (Experimental) enables PR #5 spray variation and directional bias. Default: Classic.");
                         changed |= ImGui::Checkbox("Blood Decals", &b.decals);
                         changed |= ImGui::Checkbox("Blood Physics", &b.physics);
                         if(ImGui::IsItemHovered())ImGui::SetTooltip("Gravity and drag. Surface collisions remain active when gravity is off.");
@@ -841,7 +850,7 @@ namespace
                         changed |= ImGui::SliderInt("Maximum Blood Decals", &b.maxDecals,8,Blood::MaxDecals);
                         changed |= ImGui::ColorEdit3("Blood Color",b.color);
                         ImGui::EndDisabled();
-                        if(ImGui::Button("Reset Blood to Defaults")){b=Blood::Options{};changed=true;}
+                        if(ImGui::Button("Reset Blood to Defaults")){b=Blood::Options{};changed=true;} // Blood::Options{} defaults to Classic (directionalSprays=false)
                         static bool pendingSave=false;
                         if(changed){auto live=Settings::Get();live.blood=b;Settings::Preview(live);pendingSave=true;}
                         if(pendingSave&&!ImGui::IsAnyItemActive()){Settings::Save();pendingSave=false;}
