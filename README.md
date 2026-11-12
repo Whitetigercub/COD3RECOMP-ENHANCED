@@ -37,7 +37,6 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 The mouse now points at actual menu entries. These issues have been tracked:
 
-- The game's own **brightness slider does not respond** to the mouse.
 - **Sensitivity sliders can keep changing after one click.**
 - ~~Go from the title screen into the menus, then back to **PRESS ENTER**, and **Enter stops working**.~~ (Crossed off the active list after the latest menu update; retained here for reference.)
 
