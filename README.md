@@ -23,7 +23,7 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 ## MAIN CHANGES
 
-- Added **experimental blood decals and adjustable blood clouds**. F11 - Gameplay - Blood & Gore. with selectable presets
+- Added **experimental blood decals and adjustable blood clouds with selectable presets**. F11 - Gameplay - Blood & Gore. 
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**.
 - Added **Increased sprint speed**. 3x longer sprint and 40% faster recovery time, F11 - Gameplay, Toggle
