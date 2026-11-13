@@ -23,15 +23,19 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 ## MAIN CHANGES
 
-- Added **experimental blood decals and adjustable blood clouds with selectable presets**. F11 - Gameplay - Blood & Gore. 
+- Added **customizable blood and gore** with presets, directional spray, enhanced alpha-masked bloodstains, and optional enemy bullet wounds. F11 → Gameplay → Blood & Gore.
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**.
-- Added **Increased sprint speed**. 3x longer sprint and 40% faster recovery time, F11 - Gameplay, Toggle
+- Added optional **Improved sprint stamina**: roughly 3× longer sprint duration and 40% faster recharge rate (not increased sprint movement speed). F11 → Gameplay.
+- Added **campaign walk-speed options**: Normal, Fast (+20%), and Faster (+40%), without deliberately scaling ADS, sprint, crouch, prone, or co-op movement. F11 → Gameplay.
 - **Fixed three broken buttons:** RELOAD, BINOCULARS, and OBJECTIVES.
 - Added **mouse and keyboard button icons/prompts** to the UI.
 - Added **REAL mouse support for the menus**. Hovering highlights the right option, clicking actually selects it, and clicking empty space does nothing. **I've tested it in Single Player, other menus, and the title flow.**
 - Added a native **Quit Game?** confirmation when pressing **Esc at the main menu**, with **Quit** and **Cancel**. This uses the game's own dialog and pointer paths rather than a separate Windows popup.
   - **Small limitation:** The quit confirmation is available from the main menu, not the initial **PRESS ENTER** screen. Press Enter to reach the menu before using Esc to quit.
+- Added **Enemy Wounds**: up to five independent torso bullet marks on each living enemy, replacing the oldest on the sixth hit. Optional, off by default.
+- **Fixed the Forest bomb fuse-turning softlock** with Direct Mouse Aim on: scripted `StickSwirl` temporarily receives mouse-to-right-stick rotation; normal mouse aiming returns afterward. The rotation prompt uses a mouse/circular-arrow indicator rather than misleading `[V]`.
+- **Fixed Restart Checkpoint confirmation remaining onscreen** after mouse-clicking Yes.
 - Added experimental blood-decal projection filtering and rendering diagnostics.
 
 ## Blood & Gore presets
@@ -69,6 +73,24 @@ The style is saved separately as `blood_spray_style` (`0` for Classic, `1` for D
 
 Note: the selected blood preset still applies with Directional spray; it changes the spray pattern only, not the preset values. All four gore presets are compatible with both Classic and Directional blood.
 
+### Enemy Wounds (campaign)
+
+Open **F11 → Gameplay → Blood & Gore → Enemy Wounds**. The option defaults to **Off** and is independent of the gore presets, Bloodstain Style, and Blood Spray Style.
+
+With it on, confirmed torso bullet hits leave **up to five** individually positioned, dark-centered, irregular blood marks on each living enemy. The sixth hit replaces the oldest wound. The marks follow the enemy's spine transform and are **bone-following approximations**, not skinned-mesh decals, so some poses can cause clipping or sliding. They clear on death and on invalid model/entity ownership; **corpse wound persistence is not implemented**. The system uses a fixed 12-enemy capacity.
+
+The original single-wound prototype is in [PR #9](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/9); the five-wound polish is in [PR #10](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/10). Tests verified hit capture, replacement, entity reuse and cleanup. The five-wound build reached Chambois gameplay, but clear visual confirmation of all five marks on a moving uniform and worst-case performance measurements are still outstanding. An earlier three-wound build reported **56 median FPS off / 55 on** in a short 27-second Island run; don't treat that as a five-wound stress benchmark.
+
+## Campaign movement and controls
+
+**Walk Speed:** **F11 → Gameplay → Walk Speed** offers Normal (default), Fast (+20%), and Faster (+40%). Old 2×/3×/4× options migrate to the new choices. The override targets standing, unaimed solo-campaign walking, not sprint, ADS, other stances or co-op. The +20% mode has live distance checks; +40% passed focused acceleration tests, but its exact in-game travel distance wasn't measured. [PR #8](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/8).
+
+**Improved Sprint Stamina:** An optional F11 Gameplay toggle drains stamina at one-third of the normal rate and recharges at 1.4× the normal rate. It extends sprint duration without increasing sprint movement speed. [PR #3](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/3).
+
+**Forest charge fix:** The supply-cache fuse-turning sequence expects analog right-stick circles, not an R3 click. With Direct Mouse Aim enabled, the port now detects the active StickSwirl receiver, temporarily routes mouse movement into the analog stick, then restores normal aiming when the interaction ends. The rotation prompt shows a directional mouse icon, while **V remains mapped to R3** for actual stick-click interactions. This was manually confirmed working in Forest. The final prompt graphics, physical controller path, and every exceptional exit scenario have not all been separately playtested. [PR #11](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/11).
+
+**Restart Checkpoint dialog:** Clicking Yes no longer leaves the native confirmation overlay stuck over resumed gameplay. [PR #7](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/7).
+
 ## Known menu bugs — still need fixing
 
 The mouse now points at actual menu entries. These issues have been tracked:
@@ -76,7 +98,7 @@ The mouse now points at actual menu entries. These issues have been tracked:
 - **Sensitivity sliders can keep changing after one click.**
 - ~~Go from the title screen into the menus, then back to **PRESS ENTER**, and **Enter stops working**.~~ (Crossed off the active list after the latest menu update; retained here for reference.)
 
-The brightness and sensitivity issues remain open. The crossed-out title-gateway item is retained as a historical report. Mouse hover and clicks have been playtested successfully in the Single Player flow and the main menu.
+The sensitivity issue remains open; older brightness reports also need rechecking. The crossed-out title-gateway item is retained as a historical report. Mouse hover and clicks have been playtested successfully in the Single Player flow and the main menu.
 
 See the [menu preview status](docs/MENU-POINTER-PREVIEW.md) and [bug log with reproduction/source leads](docs/MENU-SLIDER-BUGS.md). The slider fixes are deferred for a small follow-up patch.
 
@@ -121,12 +143,13 @@ Claude's read-only feasibility audit found existing host-side soldier spawning, 
 
 ### BRUTAL COD3 ideas (future exploration only)
 
-**None of the following are implemented or approved for immediate engineering work.** They are concepts to evaluate *after* existing integration checks and Wave Defense priorities:
+**None of the following are shipped features.** They remain future experiments and should not be confused with tested gameplay changes:
 
-- **Always Ragdoll on Death:** First audit whether the original engine provides usable ragdoll/death physics. Do not assume a built-in capability or commit to a custom physics rewrite.
-- **Expanded gore:** More responsive blood sprays, directional hit effects, additional wound/environmental effects, with performance and visual checks.
+- **Death-physics tuning:** A read-only investigation found an existing lethal physical-response path, but stronger impulses need live testing. Recoverable ragdoll knockdowns are not implemented and have an identified death-callback hazard.
+- **Gruesome headshots:** Proposed brief, directional head-wound blood stream. Accurate head-attachment and death-pose tracking still need to be established.
 - **Dismemberment:** A much later possibility, potentially requiring character mesh, animation and gameplay changes.
-- **Movement/combat experiments:** Slide and boot-kick mechanics, subject to separate feasibility and gameplay review.
+- **Movement/combat experiments:** Reload canceling through weapon switches, sprint shooting, slides and boot kicks. Nonlethal physics knockdowns would require a proven AI/animation recovery path.
+- **Damage-only camera flinch reduction:** Read-only analysis identified a possible damage-specific kick path, but no gameplay patch is implemented. Runtime source attribution is required; reducing damage flinch would intentionally change aim displacement during damage.
 
 The BRUTAL COD3 name is a possible future direction, **not a claim that these features ship today**.
 
