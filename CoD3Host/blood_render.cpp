@@ -31,7 +31,7 @@ constexpr int Capacity=Blood::MaxVertices+EnemyWounds::MaxVertices;
 
 bool CreateMasks(ID3D11Device* device){
  using namespace BloodMask;
- // Two immutable R8 masks with box-filtered mips for distant stains.
+ // Immutable R8 masks with box-filtered mips for distant stains.
  std::array<std::array<uint8_t,Side*Side*4/3+1>,Layers> pixels{};
  std::array<D3D11_SUBRESOURCE_DATA,Layers*Mips> data{};
  for(int layer=0;layer<Layers;layer++){
@@ -79,7 +79,12 @@ bool Initialize(ID3D11Device* device){
  o.uv=all(uv==128)?float2(.5,.5):float2(uv)/255;
  o.layer=v.mask>>16;return o;}
  float4 PS(O v):SV_Target{
-  [branch] if(v.layer!=0) v.c.a*=masks.Sample(maskSampler,float3(v.uv,v.layer-1));
+  [branch] if(v.layer!=0) {
+   float coverage=masks.Sample(maskSampler,float3(v.uv,v.layer-1));
+   // The dense center of an enemy wound reads darker than its thin fringe.
+   if(v.layer==3) v.c.rgb*=lerp(1.0,.44,smoothstep(.42,.88,coverage));
+   v.c.a*=coverage;
+  }
   return v.c;
  }
  )";

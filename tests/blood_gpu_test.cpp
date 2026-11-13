@@ -34,7 +34,7 @@ int Blood::BuildWorld(WorldVertex* out,int){
    for(int k=0;k<12;k++){*out++={-.45f,.44f,z,color};*out++=edge[k];*out++=edge[(k+1)%12];}
    stamp(.5f,.48f,.44f,1);stamp(.5f,-.48f,.44f,2);return 48;
   }
-  if(maskMode>=4){
+  if(maskMode==4||maskMode==5){
    constexpr unsigned edge[12][2]={{255,0},{255,85},{255,170},{255,255},{170,255},{85,255},{0,255},{0,170},{0,85},{0,0},{85,0},{170,0}};
    for(int j=0;j<64;j++)for(int i=0;i<64;i++){
     const float x=(i+.5f)/32-1,y=(j+.5f)/32-1;
@@ -47,7 +47,7 @@ int Blood::BuildWorld(WorldVertex* out,int){
    }
    return Blood::MaxDecals*Blood::VerticesPerSplat;
   }
-  stamp(0,0,.8f,maskMode);return 6;
+  stamp(0,0,.8f,maskMode==6?BloodMask::WoundLayer+1:maskMode);return 6;
  }
  out[0]={-.8f,-.8f,z,color};out[1]={.8f,-.8f,z,color};out[2]={0,.8f,z,color};return 3;
 }
@@ -93,6 +93,16 @@ int main(){
  maskMode=2;clear(.25f);CHECK(BloodRender::Draw(device.Get(),context.Get(),p));
  CHECK((pixel()&255u)>0);
  CHECK((pixel(256,330)&255u)<(pixel()&255u)); // Narrow across the streak.
+ maskMode=6;color=0xff808080;
+ context->ClearRenderTargetView(rtv.Get(),std::array<float,4>{.5f,.5f,.5f,1}.data());
+ context->ClearDepthStencilView(dsv.Get(),D3D11_CLEAR_DEPTH,.25f,0);
+ const auto woundBackground=pixel()&255u;
+ CHECK(BloodRender::Draw(device.Get(),context.Get(),p));
+ const auto woundCenter=pixel()&255u;
+ CHECK(woundCenter+25<woundBackground);
+ CHECK((pixel(330,275)&255u)>woundCenter);
+ CHECK((pixel(75,75)&255u)==woundBackground);
+ clear(.75f);CHECK(BloodRender::Draw(device.Get(),context.Get(),p));CHECK((pixel()&0xffffff)==0);
  for(int layer=0;layer<BloodMask::Layers;layer++){
   int clearTexels=0,partialTexels=0;
   for(int y=0;y<BloodMask::Side;y++)for(int x=0;x<BloodMask::Side;x++){

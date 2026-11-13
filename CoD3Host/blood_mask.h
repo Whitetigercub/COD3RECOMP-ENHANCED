@@ -6,7 +6,7 @@
 #include <iterator>
 
 namespace BloodMask {
-inline constexpr int Side=64, Layers=2, Mips=7;
+inline constexpr int Side=64, WoundLayer=2, Layers=3, Mips=7;
 
 struct Patch { float x,y,rx,ry,angle,opacity; };
 
@@ -37,6 +37,18 @@ inline uint8_t Texel(int layer,int col,int row){
  // don't read as clean stamps. This runs only when creating the mask.
  const float wx=x+.040f*std::sin(15*y+5*x)+.015f*std::sin(37*y-19*x);
  const float wy=y+.034f*std::sin(17*x-4*y)+.016f*std::sin(33*x+21*y);
+ if(layer==WoundLayer){
+  constexpr Patch wound[]={
+   {-.035f,.02f,.25f,.24f,-.45f,1.0f},{.13f,.10f,.28f,.19f,.52f,.64f},
+   {-.21f,-.13f,.25f,.15f,.43f,.54f},{.11f,-.21f,.14f,.22f,-.5f,.53f},
+   {-.16f,.25f,.12f,.19f,.63f,.44f},{.45f,.21f,.13f,.061f,.51f,.38f},
+   {-.42f,.16f,.065f,.11f,-.5f,.32f},{.20f,-.47f,.048f,.081f,.31f,.28f}
+  };
+  float a=0;
+  for(const auto& patch:wound)a=std::max(a,Coverage(wx,wy,patch));
+  const float grain=.88f+.12f*std::sin(x*67+y*31)*std::sin(y*73-x*21);
+  return uint8_t(a*grain*255+.5f);
+ }
  float a=0;
  const Patch* patches=layer==0?splatter:streak;
  const size_t count=layer==0?std::size(splatter):std::size(streak);
