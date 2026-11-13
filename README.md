@@ -156,7 +156,6 @@ Claude's read-only feasibility audit found existing host-side soldier spawning, 
 - **Gruesome headshots:** Proposed brief, directional head-wound blood stream. Accurate head-attachment and death-pose tracking still need to be established.
 - **Dismemberment:** A much later possibility, potentially requiring character mesh, animation and gameplay changes.
 - **Movement/combat experiments:** Reload canceling through weapon switches, sprint shooting, slides and boot kicks. Nonlethal physics knockdowns would require a proven AI/animation recovery path.
-- **Damage Flinch:** Implemented and manually confirmed working; see the campaign gameplay setting above. Further scoped-weapon, controller, recoil, and mission-transition testing remains open.
 
 The BRUTAL COD3 name is a possible future direction, **not a claim that these features ship today**.
 
