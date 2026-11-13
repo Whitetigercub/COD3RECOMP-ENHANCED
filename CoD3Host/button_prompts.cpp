@@ -125,7 +125,7 @@ void Draw(PPCContext& ctx,uint8_t* base,Function original) {
     std::string text=Text(base,ctx.r4.u32),replacement;
 #if !defined(COD3_MP) && !defined(BUTTON_PROMPTS_UNIT_TEST)
     static const bool qteTrace = getenv("COD3_QTE_TRACE") != nullptr;
-    if(qteTrace && icons && Kernel::CurrentMap()=="forest") {
+    if(qteTrace && icons) {
         static thread_local uint32_t lastCaller=0;
         static thread_local std::string lastGlyphs;
         if(ctx.lr!=lastCaller || text!=lastGlyphs) {

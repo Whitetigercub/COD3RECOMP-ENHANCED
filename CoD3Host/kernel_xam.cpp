@@ -425,7 +425,7 @@ PPC_FUNC(__imp__XamInputGetState)
         Guest::Write16(base, ctx.r5.u32 + 14, uint16_t(pad.thumbRY));
 #ifndef COD3_MP
         static const bool qteTrace = getenv("COD3_QTE_TRACE") != nullptr;
-        if (qteTrace && Kernel::CurrentMap() == "forest")
+        if (qteTrace)
         {
             static thread_local uint16_t previousButtons = 0;
             static thread_local unsigned previousAxes = 0;
