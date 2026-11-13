@@ -23,6 +23,7 @@ I've kept the older upstream READMEs in [docs/UPSTREAM-README.md](docs/UPSTREAM-
 
 ## MAIN CHANGES
 
+- Added optional **Damage Flinch reduction** under **F11 → Gameplay → Damage Flinch**: Normal (default), Reduced (50%), Minimal (25%). Incoming damage shakes the camera less without reducing health damage. Reduced modes intentionally also reduce aim displacement while getting hit. [PR #13](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/13).
 - Added **customizable blood and gore** with presets, directional spray, enhanced alpha-masked bloodstains, and optional enemy bullet wounds. F11 → Gameplay → Blood & Gore.
 - Added **modern COD-style hitmarkers**, with sound and customization. F11 - Gameplay.
 - Added **M1 Garand partial reload**.
@@ -80,6 +81,12 @@ Open **F11 → Gameplay → Blood & Gore → Enemy Wounds**. The option defaults
 With it on, confirmed torso bullet hits leave **up to five** individually positioned, dark-centered, irregular blood marks on each living enemy. The sixth hit replaces the oldest wound. The marks follow the enemy's spine transform and are **bone-following approximations**, not skinned-mesh decals, so some poses can cause clipping or sliding. They clear on death and on invalid model/entity ownership; **corpse wound persistence is not implemented**. The system uses a fixed 12-enemy capacity.
 
 The original single-wound prototype is in [PR #9](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/9); the five-wound polish is in [PR #10](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/10). Tests verified hit capture, replacement, entity reuse and cleanup. The five-wound build reached Chambois gameplay, but clear visual confirmation of all five marks on a moving uniform and worst-case performance measurements are still outstanding. An earlier three-wound build reported **56 median FPS off / 55 on** in a short 27-second Island run; don't treat that as a five-wound stress benchmark.
+
+### Damage Flinch (campaign)
+
+Open **F11 → Gameplay → Damage Flinch** to choose **Normal** (original kick, default), **Reduced** (50% of damage-attributed pitch/roll amplitudes), or **Minimal** (25%). The setting only scales newly created, attributed incoming-damage camera kick. Player health damage is unchanged. Scripted-only viewkicks and ambiguous overlapping events retain native strength.
+
+This isn't just a visual filter: reduced camera kick also means **less aim displacement while the player takes damage**. The user has confirmed the reduction works in-game. Chambois traces verified 50% and 25% kick-amplitude ratios, unchanged health loss, and controlled scripted-viewkick preservation. **Scoped weapons, physical mouse/controller controls, complete recoil comparisons, and some campaign transitions still need validation**; an unrelated console-triggered map switch hit the same memory issue in control and prototype builds. [Merged PR #13](https://github.com/Whitetigercub/COD3RECOMP-ENHANCED/pull/13).
 
 ## Campaign movement and controls
 
@@ -149,7 +156,6 @@ Claude's read-only feasibility audit found existing host-side soldier spawning, 
 - **Gruesome headshots:** Proposed brief, directional head-wound blood stream. Accurate head-attachment and death-pose tracking still need to be established.
 - **Dismemberment:** A much later possibility, potentially requiring character mesh, animation and gameplay changes.
 - **Movement/combat experiments:** Reload canceling through weapon switches, sprint shooting, slides and boot kicks. Nonlethal physics knockdowns would require a proven AI/animation recovery path.
-- **Damage-only camera flinch reduction:** Read-only analysis identified a possible damage-specific kick path, but no gameplay patch is implemented. Runtime source attribution is required; reducing damage flinch would intentionally change aim displacement during damage.
 
 The BRUTAL COD3 name is a possible future direction, **not a claim that these features ship today**.
 
