@@ -797,6 +797,14 @@ namespace
                         g_edit.walkSpeedBonus = walkSpeed * 20;
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Standing, hip-fire movement on foot in the solo campaign.");
+#ifndef COD3_MP
+                    const char* flinchModes[] = {"Normal", "Reduced (50%)", "Minimal (25%)"};
+                    int flinchMode = Settings::DamageFlinch();
+                    if (ImGui::Combo("Damage Flinch", &flinchMode, flinchModes, IM_ARRAYSIZE(flinchModes)))
+                        Settings::SetDamageFlinch(flinchMode);
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Reduces view and aim displacement from confirmed damage in solo play.");
+#endif
                     ImGui::Checkbox("Improved sprint stamina (solo campaign)", &g_edit.improvedSprintStamina);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Sprint three times as long and refill stamina 40%% faster. The recovery delay still applies.");
