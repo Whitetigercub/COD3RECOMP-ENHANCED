@@ -159,11 +159,22 @@ int main()
     assert((verts[0].mask >> 16) == BloodMask::WoundLayer + 1);
 
     record(Entity, {7, 26, 36}, 40, 5);
+    record(Entity, {7, 26, 38}, 30, 5);
+    poseReads = 0;
     Update(ctx, base);
-    assert(Append(verts, MaxVertices) == 18);
+    assert(poseReads == 2);
+    assert(Append(verts, MaxVertices) == 30);
+    CheckCenter(verts, {8, 25.20f, 30});
+    CheckCenter(verts + 24, {7.20f, 26, 38});
+
+    record(Entity, {7, 26, 40}, 25);
+    Update(ctx, base);
+    assert(Append(verts, MaxVertices) == 30);
     CheckCenter(verts, {7.20f, 26, 30});
     CheckCenter(verts + 6, {7.20f, 26, 34});
     CheckCenter(verts + 12, {7.20f, 26, 36});
+    CheckCenter(verts + 18, {7.20f, 26, 38});
+    CheckCenter(verts + 24, {7.20f, 26, 40});
 
     Word(HandleEntry + 8, SecondEntity);
     Word(HandleEntry + 12, 3);
@@ -174,8 +185,8 @@ int main()
     Word(SecondEntity + 776, 100);
     record(SecondEntity, {9, 27, 35}, 85);
     Update(ctx, base);
-    assert(Append(verts, MaxVertices) == 24);
-    CheckCenter(verts + 18, {9.20f, 27, 35});
+    assert(Append(verts, MaxVertices) == 36);
+    CheckCenter(verts + 30, {9.20f, 27, 35});
 
     Word(HandleEntry + 4, 8);
     Word(Entity + 500, (8u << 14) | 12);
@@ -203,5 +214,5 @@ int main()
     Update(ctx, base);
     assert(Append(verts, MaxVertices) == 0);
     assert(VirtualFree(base, 0, MEM_RELEASE));
-    std::puts("PASS: wound gates, three-hit limit, pose sharing, attachment, eviction, reuse and cleanup");
+    std::puts("PASS: wound gates, five-hit limit, pose sharing, attachment, eviction, reuse and cleanup");
 }

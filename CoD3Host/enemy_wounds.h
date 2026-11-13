@@ -7,7 +7,7 @@
 namespace EnemyWounds
 {
     constexpr int MaxEnemies = 12;
-    constexpr int WoundsPerEnemy = 3;
+    constexpr int WoundsPerEnemy = 5;
     constexpr int MaxVertices = MaxEnemies * WoundsPerEnemy * 6;
 
     struct Hit
