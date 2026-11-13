@@ -5,6 +5,7 @@
 #include "settings.h"
 #include "hitmarkers.h"
 #include "input.h"
+#include "button_prompts.h"
 #include "net.h"
 #include "render_stats.h"
 #include "render_post.h"
@@ -1736,10 +1737,11 @@ bool Overlay::Render(ID3D11RenderTargetView* back, ID3D11Texture2D* backTexture,
     void (*flareHudDraw)(int, int) = g_flareHudDraw.load();
     const bool flareHud = flareHudActive && flareHudDraw && flareHudActive();
     const bool notice = NoticeShown();
+    const bool swirl = Input::StickSwirlActive() && Input::MouseHeld() && !Input::MenuMode() && ButtonPrompts::KeyboardActive() && !open && !console;
     void (*lobbyDraw)(int, int, bool) = g_lobbyDraw.load();
     if (g_lobbyOpen.load() && !LobbyAvailableNow()) g_lobbyOpen.store(false);
     const bool lobby = lobbyDraw && LobbyAvailableNow();
-    if (!open && !console && !hud && !menuHud && !streakHud && !seatHud && !matchHud && !weaponHud && !flareHud && !marker && !notice && !lobby && !values.fpsOverlay && !values.statsOverlay)
+    if (!swirl && !open && !console && !hud && !menuHud && !streakHud && !seatHud && !matchHud && !weaponHud && !flareHud && !marker && !notice && !lobby && !values.fpsOverlay && !values.statsOverlay)
     {
         if (shotOverlay && backTexture != nullptr && g_screenshotWanted.exchange(false)) SaveScreenshotOf(backTexture, width, height, 0.0f);
         return false;
@@ -1748,6 +1750,26 @@ bool Overlay::Render(ID3D11RenderTargetView* back, ID3D11Texture2D* backTexture,
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
+    if (swirl)
+    {
+        // Only the active right-stick rotation receiver owns this indicator.
+        auto* draw = ImGui::GetForegroundDrawList();
+        const ImVec2 center(width * 0.5f, height * 0.79f);
+        const float r = 27.0f;
+        const ImU32 ink = IM_COL32(240, 223, 171, 255);
+        draw->AddRectFilled(ImVec2(center.x-125, center.y-38), ImVec2(center.x+125, center.y+62), IM_COL32(0,0,0,190), 8);
+        draw->AddRect(ImVec2(center.x-10, center.y-17), ImVec2(center.x+10, center.y+17), ink, 9, 0, 2);
+        draw->AddLine(ImVec2(center.x,center.y-13),ImVec2(center.x,center.y-3),ink,2);
+        const bool clockwise = ButtonPrompts::StickSwirlClockwise();
+        draw->PathArcTo(center, r, clockwise ? -2.8f : -2.2f, clockwise ? 2.2f : 2.8f, 30);
+        draw->PathStroke(ink, 0, 3);
+        const ImVec2 tip(center.x+r*std::cos(2.2f), center.y+(clockwise ? 1.f : -1.f)*r*std::sin(2.2f));
+        draw->AddTriangleFilled(tip, ImVec2(tip.x+10,tip.y+(clockwise ? -1.f : 1.f)), ImVec2(tip.x+3,tip.y+(clockwise ? -11.f : 11.f)), ink);
+        const char* text = clockwise ? "Rotate mouse clockwise" : "Rotate mouse counterclockwise";
+        const ImVec2 size = ImGui::CalcTextSize(text);
+        draw->AddText(ImVec2(center.x-size.x*0.5f,center.y+37), ink, text);
+    }
+
     if (values.fpsOverlay || values.statsOverlay)
     {
         ImGui::SetNextWindowPos(ImVec2(8, 8));

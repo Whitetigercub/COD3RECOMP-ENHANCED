@@ -249,6 +249,7 @@ namespace
     long g_lookX = 0, g_lookY = 0;
     std::atomic<int64_t> g_lookAskedMs{ -100000 };
     std::atomic<bool> g_lookStick{ false };
+    std::atomic<bool> g_stickSwirl{ false };
 
     int64_t NowMs()
     {
@@ -257,7 +258,7 @@ namespace
 
     bool LookDirect()
     {
-        return Settings::Get().directMouse && !g_lookStick.load(std::memory_order_relaxed) &&
+        return Settings::Get().directMouse && !g_stickSwirl.load() && !g_lookStick.load(std::memory_order_relaxed) &&
                NowMs() - g_lookAskedMs.load(std::memory_order_relaxed) < 300;
     }
 
@@ -1349,9 +1350,10 @@ void Input::SetRumble(uint16_t left, uint16_t right)
 
 bool Input::TakeLook(long& dx, long& dy)
 {
+    std::lock_guard<std::mutex> lock(g_lookMutex);
+    if (g_stickSwirl.load()) { dx = dy = 0; return false; }
     g_lookAskedMs.store(NowMs(), std::memory_order_relaxed);
     g_lookStick.store(false, std::memory_order_relaxed);
-    std::lock_guard<std::mutex> lock(g_lookMutex);
     if (!Settings::Get().directMouse) { g_lookX = g_lookY = 0; dx = dy = 0; return false; }
     // What moved since the title's last poll of the pad, so the turn is
     // as fresh as this frame.
@@ -1418,3 +1420,24 @@ bool Input::ObjectivesVisible() { return g_objectivesVisible.load(std::memory_or
 #endif
 
 void Input::MainMenuSeen() { g_mainMenuSeen.store(true); }
+
+void Input::SetStickSwirl(bool active)
+{
+    // Same lock order as Refresh: pad state first, then accumulated mouse look.
+    std::lock_guard<std::mutex> padLock(g_mutex);
+    std::lock_guard<std::mutex> lookLock(g_lookMutex);
+    if (g_stickSwirl.load() == active) return;
+    g_stickSwirl.store(active);
+    g_lookX = g_lookY = 0;
+    long x = 0, y = 0;
+    bool raw = false;
+    MouseDelta(x, y, raw); // Discard movement belonging to the previous owner.
+    g_lastRead = {};
+    g_lookStick.store(false);
+    g_lookAskedMs.store(NowMs());
+    if (getenv("COD3_QTE_TRACE")) {
+        printf("qte route: StickSwirl=%d directMouse=%d\n", int(active), int(Settings::Get().directMouse));
+        fflush(stdout);
+    }
+}
+bool Input::StickSwirlActive() { return g_stickSwirl.load(); }
