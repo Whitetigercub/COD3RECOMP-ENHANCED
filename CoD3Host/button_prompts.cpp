@@ -123,6 +123,19 @@ void Draw(PPCContext& ctx,uint8_t* base,Function original) {
     const uint32_t font=regularFont.load(std::memory_order_relaxed);
     if(!icons && (ctx.r4.u32<0x10000 || (base[ctx.r4.u32]!='P' && base[ctx.r4.u32]!='U' && base[ctx.r4.u32]!='Q' && base[ctx.r4.u32]!='Q' && base[ctx.r4.u32]!='Q'))) { original(ctx,base);return; }
     std::string text=Text(base,ctx.r4.u32),replacement;
+#if !defined(COD3_MP) && !defined(BUTTON_PROMPTS_UNIT_TEST)
+    static const bool qteTrace = getenv("COD3_QTE_TRACE") != nullptr;
+    if(qteTrace && icons && Kernel::CurrentMap()=="forest") {
+        static thread_local uint32_t lastCaller=0;
+        static thread_local std::string lastGlyphs;
+        if(ctx.lr!=lastCaller || text!=lastGlyphs) {
+            lastCaller=uint32_t(ctx.lr);lastGlyphs=text;
+            printf("qte prompt: t=%llu caller=%08X glyphs=", GetTickCount64(), lastCaller);
+            for(unsigned char glyph:text) printf("%02X ", unsigned(glyph));
+            printf("context=%s\n",contextText.c_str());fflush(stdout);
+        }
+    }
+#endif
     if(icons && font) {
         const auto settings=Settings::Get();
         for(unsigned char c:text) {
