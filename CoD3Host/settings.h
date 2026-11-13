@@ -225,6 +225,8 @@ namespace Settings
     Values Get();
     bool ImprovedSprintStamina();
     int WalkSpeedBonus();
+    int DamageFlinch();
+    void SetDamageFlinch(int mode);
     bool EnemyWoundsEnabled();
     void Set(const Values& values);
     // Setting them without saving, for a slider dragged in the menu (the

@@ -116,6 +116,7 @@ set(COD3_HOST_SOURCES
     "coop_events.cpp"     # co-op v40: the host's sounds, speech, music, earthquakes on the joining copy
     "coop_probe.cpp")     # co-op v40 design probe (COD3_PROBE40)
 add_executable(CoD3 WIN32 ${COD3_HOST_SOURCES} "resources/CoD3.rc")
+target_sources(CoD3 PRIVATE "damage_flinch_trace.cpp")
 
 # The HDR mode's shaders (hdr/cod3_hdr.hlsl on RenoDX's shader library and
 # the Prism tone mapper, thirdparty/renodx and thirdparty/prism, both MIT),
