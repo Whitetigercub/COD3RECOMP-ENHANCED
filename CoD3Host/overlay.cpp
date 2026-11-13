@@ -836,7 +836,7 @@ namespace
                         if(ImGui::IsItemHovered())ImGui::SetTooltip("Selecting a preset updates the blood settings immediately. Manually changing a setting switches this to Custom. Blood Spray Style is independent of presets.");
                         const bool woundsChanged = ImGui::Checkbox("Enemy Wounds", &g_edit.enemyWounds);
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Experimental. Adds one blood mark to a living enemy after a torso bullet hit.");
+                            ImGui::SetTooltip("Experimental. Torso bullet hits leave up to five blood marks per living enemy.");
                         changed |= ImGui::Checkbox("Enable Blood", &b.enabled);
                         ImGui::BeginDisabled(!b.enabled);
                         changed |= ImGui::SliderInt("Blood Amount", &b.amount,0,200,"%d%%");

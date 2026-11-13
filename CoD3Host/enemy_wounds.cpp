@@ -150,7 +150,7 @@ namespace
         seed = std::rotl(seed, 11) ^ std::bit_cast<uint32_t>(hit.point.z);
         seed = (seed ^ (seed >> 16)) * 0x7feb352du;
         const float angle = (float(seed & 255) / 255.0f - 0.5f) * 1.8f;
-        const float scale = 1.5f * (0.87f + float((seed >> 8) & 255) / 255.0f * 0.26f);
+        const float scale = 2.25f * (0.87f + float((seed >> 8) & 255) / 255.0f * 0.26f);
         const float c = std::cos(angle), s = std::sin(angle);
         return {hit.tag, hit.point + n * SurfaceOffset,
                 (tangent * c + bitangent * s) * (1.85f * scale),
