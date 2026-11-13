@@ -17,6 +17,12 @@ namespace {
 std::atomic<bool> keyboard{true};
 std::atomic<uint32_t> regularFont{0};
 thread_local std::string contextText;
+thread_local uint32_t richWidget = 0;
+std::atomic<uint32_t> swirlWidget{0};
+std::atomic<bool> swirlClockwise{true};
+bool ReplaceSwirlGlyph(uint32_t owner, const std::string& text, bool icons, bool keyboardActive) {
+    return owner != 0 && owner == swirlWidget.load() && icons && keyboardActive && text == std::string(1, char(0x33));
+}
 std::string Text(uint8_t* base,uint32_t address) {
     if(address<0x10000 || address>0xFFFFF000u) return {};
     char buffer[1024]{}; SIZE_T got=0;
@@ -123,6 +129,23 @@ void Draw(PPCContext& ctx,uint8_t* base,Function original) {
     const uint32_t font=regularFont.load(std::memory_order_relaxed);
     if(!icons && (ctx.r4.u32<0x10000 || (base[ctx.r4.u32]!='P' && base[ctx.r4.u32]!='U' && base[ctx.r4.u32]!='Q' && base[ctx.r4.u32]!='Q' && base[ctx.r4.u32]!='Q'))) { original(ctx,base);return; }
     std::string text=Text(base,ctx.r4.u32),replacement;
+    // Only the rotation widget identified by the active receiver. Ordinary
+    // R3-click glyphs, including rebinding and controller prompts, stay native.
+    if (ReplaceSwirlGlyph(richWidget, text, icons, ButtonPrompts::KeyboardActive())) return;
+
+#if !defined(COD3_MP) && !defined(BUTTON_PROMPTS_UNIT_TEST)
+    static const bool qteTrace = getenv("COD3_QTE_TRACE") != nullptr;
+    if(qteTrace && icons) {
+        static thread_local uint32_t lastCaller=0;
+        static thread_local std::string lastGlyphs;
+        if(ctx.lr!=lastCaller || text!=lastGlyphs) {
+            lastCaller=uint32_t(ctx.lr);lastGlyphs=text;
+            printf("qte prompt: t=%llu caller=%08X glyphs=", GetTickCount64(), lastCaller);
+            for(unsigned char glyph:text) printf("%02X ", unsigned(glyph));
+            printf("context=%s\n",contextText.c_str());fflush(stdout);
+        }
+    }
+#endif
     if(icons && font) {
         const auto settings=Settings::Get();
         for(unsigned char c:text) {
@@ -150,12 +173,15 @@ void Draw(PPCContext& ctx,uint8_t* base,Function original) {
     original(ctx,base);
 }
 void Rich(PPCContext& ctx,uint8_t* base,Function original) {
+    const uint32_t previousWidget = richWidget;
+    richWidget = ctx.r3.u32;
     std::string previous=std::move(contextText);
     const uint32_t string=Guest::Read32(base,ctx.r3.u32+20);
     contextText=string ? Text(base,string+12) : "";
     std::transform(contextText.begin(),contextText.end(),contextText.begin(),[](unsigned char c){return char(std::tolower(c));});
     original(ctx,base);
     contextText=std::move(previous);
+    richWidget = previousWidget;
 }
 // Optional developer verification sheet; never displayed during normal play.
 void Sheet(PPCContext& ctx,uint8_t* base,Function original) {
@@ -181,6 +207,11 @@ void Sheet(PPCContext& ctx,uint8_t* base,Function original) {
     contextText=previous;
 }
 }
+void ButtonPrompts::SetStickSwirlPrompt(uint32_t widget, bool clockwise) {
+    swirlClockwise.store(clockwise);
+    swirlWidget.store(widget);
+}
+bool ButtonPrompts::StickSwirlClockwise() { return swirlClockwise.load(); }
 void ButtonPrompts::KeyboardUsed() { keyboard.store(true,std::memory_order_relaxed); }
 void ButtonPrompts::ControllerUsed() { keyboard.store(false,std::memory_order_relaxed); }
 bool ButtonPrompts::KeyboardActive() {

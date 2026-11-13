@@ -423,6 +423,26 @@ PPC_FUNC(__imp__XamInputGetState)
         Guest::Write16(base, ctx.r5.u32 + 10, uint16_t(pad.thumbLY));
         Guest::Write16(base, ctx.r5.u32 + 12, uint16_t(pad.thumbRX));
         Guest::Write16(base, ctx.r5.u32 + 14, uint16_t(pad.thumbRY));
+#ifndef COD3_MP
+        static const bool qteTrace = getenv("COD3_QTE_TRACE") != nullptr;
+        if (qteTrace)
+        {
+            static thread_local uint16_t previousButtons = 0;
+            static thread_local unsigned previousAxes = 0;
+            const uint16_t buttons = Guest::Read16(base, ctx.r5.u32 + 4);
+            const auto axis = [](int value) { return value < -8000 ? 1u : value > 8000 ? 2u : 0u; };
+            const unsigned axes = axis(pad.thumbRX) | (axis(pad.thumbRY) << 2);
+            if (buttons != previousButtons || axes != previousAxes)
+            {
+                printf("qte pad: t=%llu caller=%08X buttons=%04X changed=%04X right=%d,%d\n",
+                       GetTickCount64(), uint32_t(ctx.lr), unsigned(buttons),
+                       unsigned(buttons ^ previousButtons), pad.thumbRX, pad.thumbRY);
+                fflush(stdout);
+                previousButtons = buttons;
+                previousAxes = axes;
+            }
+        }
+#endif
     }
     ctx.r3.u32 = X_ERROR_SUCCESS;
 }

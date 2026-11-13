@@ -29,6 +29,9 @@ namespace Input
     };
 
     Pad State();
+    // Campaign interaction owns mouse deltas; never changes the saved aim option.
+    void SetStickSwirl(bool active);
+    bool StickSwirlActive();
     void MainMenuSeen();
     bool ObjectivesVisible(); // campaign keyboard objectives toggle
     // (co-op v46) the real controllers as they are now (any connected pad, deadzones applied), for the

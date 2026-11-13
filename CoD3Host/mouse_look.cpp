@@ -19,6 +19,10 @@
 // aim" in the F11 menu's controls.
 
 #include "input.h"
+#include "stick_swirl.h"
+#include "button_prompts.h"
+#include <cstdio>
+#include <cstdlib>
 #include "kernel.h"
 #include "settings.h"
 #ifdef COD3_MP
@@ -136,3 +140,61 @@ PPC_FUNC(sub_8250FF48)
     WriteFloat(base, client + YawOffset, ReadFloat(base, client + YawOffset) - float(dx) * scale);
     WriteFloat(base, client + PitchOffset, ReadFloat(base, client + PitchOffset) + float(dy) * scale);
 }
+
+#ifndef COD3_MP
+// Read only at guest interaction lifecycle boundaries, on the game thread.
+// The receiver cache alone is not evidence of an active interaction.
+namespace {
+void ObserveStickSwirl(uint8_t* base, uint32_t controller)
+{
+    const uint32_t index = Guest::Read32(base, LocalClientIndex);
+    if (index > 3 || Guest::Read32(base, 0x82A59DA0 + index * 4) != controller) return;
+    const bool active = StickSwirl::Active(controller, [&](uint32_t address) { return Guest::Read32(base, address); });
+    if (active != Input::StickSwirlActive() && getenv("COD3_QTE_TRACE")) {
+        const uint32_t state = Guest::Read32(base, controller + 4);
+        printf("qte owner: client=%u controller=%08X state=%08X receiver=%08X active=%d\n",
+            index, controller, state, state ? Guest::Read32(base, state + 32) : 0, int(active));
+        fflush(stdout);
+    }
+    uint32_t widget = 0;
+    bool clockwise = true;
+    if (active) {
+        const uint32_t state = Guest::Read32(base, controller + 4);
+        const uint32_t definition = Guest::Read32(base, state + 28);
+        clockwise = Guest::Read32(base, definition + 0x440) != 0;
+        // Same chain used by StickSwirl::Initialize -> sub_824C0EB0,
+        // which assigns "~rstick" to the text widget at prompt + 36.
+        const uint32_t ui = Guest::Read32(base, 0x82A8DF40);
+        const uint32_t prompt = ui ? Guest::Read32(base, ui + 76) : 0;
+        widget = prompt ? Guest::Read32(base, prompt + 36) : 0;
+    }
+    ButtonPrompts::SetStickSwirlPrompt(widget, clockwise);
+    Input::SetStickSwirl(active);
+}
+}
+extern "C" PPC_FUNC(__imp__sub_825012F8);
+PPC_FUNC(sub_825012F8)
+{
+    const uint32_t controller = ctx.r3.u32;
+    __imp__sub_825012F8(ctx, base);
+    ObserveStickSwirl(base, controller);
+}
+extern "C" PPC_FUNC(__imp__sub_82501BA8);
+PPC_FUNC(sub_82501BA8)
+{
+    const uint32_t controller = ctx.r3.u32;
+    __imp__sub_82501BA8(ctx, base);
+    ObserveStickSwirl(base, controller);
+}
+extern "C" PPC_FUNC(__imp__sub_824FDE90);
+PPC_FUNC(sub_824FDE90)
+{
+    const uint32_t index = Guest::Read32(base, LocalClientIndex);
+    if (index <= 3 && Guest::Read32(base, 0x82A59DA0 + index * 4) == ctx.r3.u32)
+    {
+        ButtonPrompts::SetStickSwirlPrompt(0, true);
+        Input::SetStickSwirl(false);
+    }
+    __imp__sub_824FDE90(ctx, base);
+}
+#endif
